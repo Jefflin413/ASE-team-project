@@ -3,6 +3,8 @@ import json
 import os
 import sqlite3
 import sys
+import boto3
+import time
 
 # Third party libraries
 from flask import Flask, redirect, request, url_for, render_template
@@ -20,6 +22,9 @@ import requests
 from utils.db import init_db_command
 from utils.user import User
 import json
+
+# AWS Client
+AWS_client = boto3.client('cloudformation')
 
 # Configuration
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)
@@ -68,6 +73,7 @@ def index():
             "<div><p>Google Profile Picture:</p>"
             '<img src="{}" alt="Google profile pic"></img></div>'
             '<p> user type {}</p>'
+            '<div><a href="/stream">start streaming</a></div>'
             '<a class="button" href="/logout">Logout</a>'.format(
                 current_user.name, current_user.email, current_user.profile_pic, current_user.usertype
             )
@@ -194,6 +200,46 @@ def test():
         return "asdasdasd"
     else:
         return '<a class="button" href="/login">Google Login</a>'
+
+@app.route("/stream", methods=['GET', 'POST'])
+@login_required
+def stream():
+    if request.method == 'POST':
+        stream_category = request.form.get('stream_category')
+        StackName = 'liveStreaming' + current_user.id
+        AWS_client.create_stack(
+            StackName=StackName,
+            TemplateBody=open('live-streaming-on-aws-with-mediastore.template', 'r').read(),
+            # If you don't have a template file in the folder then comment the line above and use the line below 
+            #TemplateURL='https://s3.amazonaws.com/solutions-reference/live-streaming-on-aws-with-mediastore/latest/live-streaming-on-aws-with-mediastore.template',
+            Parameters=[
+                {
+                    'ParameterKey': 'InputType',
+                    'ParameterValue': 'RTMP_PUSH',
+                },
+                {
+                    'ParameterKey': 'InputCIDR',
+                    'ParameterValue': '0.0.0.0/0',
+                }
+            ],
+            TimeoutInMinutes=10,
+            Capabilities=[
+                'CAPABILITY_IAM',
+            ],
+        )
+
+        while AWS_client.describe_stacks(StackName=StackName)['Stacks'][0]['StackStatus'] != 'CREATE_COMPLETE':
+            print('CloudFormation is creating the streaming pipeline, please wait...')
+            time.sleep(10)
+        print('Streaming pipeline created successfully')
+        stack_detail = AWS_client.describe_stacks(StackName=StackName)
+        OBS_URL = stack_detail['Stacks'][0]['Outputs'][2]['OutputValue'][:-7] # endpoint for live-streamer to input in OBS
+        return render_template("stream.html", OBS_URL=OBS_URL)
+    else:
+        if current_user.is_authenticated:
+            return render_template("stream.html")
+        else:
+            return '<a class="button" href="/login">Google Login</a>'
 
 if __name__ == "__main__":
     app.run(ssl_context="adhoc", debug=True)

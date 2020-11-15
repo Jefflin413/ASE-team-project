@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>stream</title>
+</head>
+<body>
+	<form action="/stream" method="post">
+		<select name="stream_category" id="stream_category">
+ 			<option value="sports">sports</option>
+			<option value="travel & events">travel & events</option>
+			<option value="gaming">gaming</option>
+			<option value="people & blogs">people & blogs</option>
+			<option value="entertainment">entertainment</option>
+			<option value="news & politics">news & politics</option>
+			<option value="education">education</option>
+			<option value="science & technology">science & technology</option>
+		</select>
+		<input type="submit" value="Build pipeline">
+	</form>
+	<div>Please do not close/refresh the page after submitting, the work will be done in roughly 5 minutes</div>
+
+	{% if OBS_URL %}
+		<h1>OBS_URL: {{OBS_URL}}</h1>
+		<h1>Stream key: stream</h1>
+	{% endif %}	
+</select>
+</body>
+</html>
