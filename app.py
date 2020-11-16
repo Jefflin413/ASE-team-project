@@ -33,6 +33,7 @@ GOOGLE_DISCOVERY_URL = (
     "https://accounts.google.com/.well-known/openid-configuration"
 )
 
+
 # Flask app setup
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY") or os.urandom(24)
@@ -68,6 +69,8 @@ def load_user(user_id):
 @app.route("/")
 def index():
     if current_user.is_authenticated:
+        return render_template("index.html", current_user_name=current_user.name, current_user_email=current_user.email)
+        """
         return (
             "<p>Hello, {}! You're logged in! Email: {}</p>"
             "<div><p>Google Profile Picture:</p>"
@@ -78,6 +81,7 @@ def index():
                 current_user.name, current_user.email, current_user.profile_pic, current_user.usertype
             )
         )
+        """
     else:
         return render_template("index.html")
 
@@ -201,6 +205,19 @@ def test():
     else:
         return '<a class="button" href="/login">Google Login</a>'
 
+@app.route("/profile")
+@login_required
+def profile():
+    if current_user.is_authenticated:
+        return render_template("profile.html", 
+            current_user_name=current_user.name, 
+            current_user_email=current_user.email, 
+            current_user_profile_pic=current_user.profile_pic, 
+            current_user_usertype=current_user.usertype)
+    else:
+        return '<a class="button" href="/login">Google Login</a>'
+
+
 @app.route("/stream", methods=['GET', 'POST'])
 @login_required
 def stream():
@@ -234,10 +251,11 @@ def stream():
         print('Streaming pipeline created successfully')
         stack_detail = AWS_client.describe_stacks(StackName=StackName)
         OBS_URL = stack_detail['Stacks'][0]['Outputs'][2]['OutputValue'][:-7] # endpoint for live-streamer to input in OBS
-        return render_template("stream.html", OBS_URL=OBS_URL)
+        m3u8_URL = stack_detail['Stacks'][0]['Outputs'][4]['OutputValue'] # m3u8 file that needs to be shown to the audiences
+        return render_template("stream.html", current_user_name=current_user.name, current_user_email=current_user.email, OBS_URL=OBS_URL, m3u8_URL=m3u8_URL)
     else:
         if current_user.is_authenticated:
-            return render_template("stream.html")
+            return render_template("stream.html", current_user_name=current_user.name, current_user_email=current_user.email)
         else:
             return '<a class="button" href="/login">Google Login</a>'
 

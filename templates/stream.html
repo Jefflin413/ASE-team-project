@@ -1,28 +1,49 @@
+{% extends 'base.html' %}
+
 <!DOCTYPE html>
 <html>
 <head>
-	<title>stream</title>
+  <title>stream</title>
+  <link href="http://vjs.zencdn.net/4.12/video-js.css" rel="stylesheet">
+  <script src="http://vjs.zencdn.net/4.12/video.js"></script>
+  <script src="https://github.com/videojs/videojs-contrib-media-sources/releases/download/v0.1.0/videojs-media-sources.js"></script>
+  <script src="https://github.com/videojs/videojs-contrib-hls/releases/download/v0.11.2/videojs.hls.min.js"></script>
 </head>
 <body>
-	<form action="/stream" method="post">
-		<select name="stream_category" id="stream_category">
- 			<option value="sports">sports</option>
-			<option value="travel & events">travel & events</option>
-			<option value="gaming">gaming</option>
-			<option value="people & blogs">people & blogs</option>
-			<option value="entertainment">entertainment</option>
-			<option value="news & politics">news & politics</option>
-			<option value="education">education</option>
-			<option value="science & technology">science & technology</option>
-		</select>
-		<input type="submit" value="Build pipeline">
-	</form>
-	<div>Please do not close/refresh the page after submitting, the work will be done in roughly 5 minutes</div>
+  {% block content %}	
+    <div class="container">
+      <div class="row">
+        <div class="col-lg-12">
+          <div class="content">
+	        <form action="/stream" method="post">
+	      	  <label for="title">Choose a category that best describes your live-streaming for this time</label>
+		      <select name="stream_category" id="stream_category">
+ 			    <option value="sports">sports</option>
+			    <option value="travel & events">travel & events</option>
+			    <option value="gaming">gaming</option>
+			    <option value="people & blogs">people & blogs</option>
+			    <option value="entertainment">entertainment</option>
+			    <option value="news & politics">news & politics</option>
+			    <option value="education">education</option>
+			    <option value="science & technology">science & technology</option>
+		      </select>
+		      <input type="submit" value="Build pipeline">
+	        </form>
+	        <div style="color:red;">Please do not close/refresh/resubmit the page after submitting, the work will be done in roughly 5 minutes</div>
+	        <div>Once the construction success, the webpage will be refreshed automatically and show the OBS URL, stream key, as well as the video player playing your live-streaming after you click on "start streaming" in OBS</div>
+	        <div>In the meanwhile, you can read the instruction of the usage and the installation of <a href="https://obsproject.com/">OBS</a> at the bottom of this <a href="https://aws.amazon.com/tw/blogs/media/part1-how-to-send-live-video-to-aws-elemental-mediastore/">website</a></div>
 
-	{% if OBS_URL %}
-		<h1>OBS_URL: {{OBS_URL}}</h1>
-		<h1>Stream key: stream</h1>
-	{% endif %}	
-</select>
+	        {% if OBS_URL %}
+		      <h3>OBS_URL: {{OBS_URL}}</h3>
+		      <h3>Stream key: stream</h3>
+              <video id="streaming_video" class="video-js vjs-default-skin" controls preload="auto" width="640" height="480" data-setup='{}'>
+                <source src={{m3u8_URL}} type='application/x-mpegURL'>
+              </video>
+	        {% endif %}	
+          </div>
+        </div>
+      </div>
+    </div>
+  {% endblock %}
 </body>
 </html>

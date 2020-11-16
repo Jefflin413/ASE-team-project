@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Profile</title>
+</head>
+<body>
+  {% block body %}
+    <div class="container">
+      <div class="row">
+      	<div class="col-lg-12">
+      	  <div class="content">
+      	  	<h1>My Profile</h1>
+      	    <div>User name: {{current_user_name}}</div>
+      	    <div>Email: {{current_user_email}}</div>
+      	    <div>
+      	  	  <div>Google Profile Picture:</div>
+      	      <img src={{current_user_profile_pic}} alt="Google profile pic">
+      	    </div>
+      	    <div> User type {{current_user_usertype}}</div>
+      	  </div>
+      	</div>
+      </div>
+    </div>
+  {% endblock %}
+</body>
+</html>
