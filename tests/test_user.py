@@ -1,23 +1,22 @@
-import sqlite3
-from sqlite3 import Error
+"""unit test for utils.user"""
 from unittest import TestCase
 import unittest
 import utils.db
 
-from flask import Flask, g
-from flask_login import LoginManager
+from flask import Flask
 
 from utils.user import User
 unittest.TestLoader.sortTestMethodsUsing = None
 
+
 class TestUser(TestCase):
-    def setUp(self):
-        print("setUp")
+    # def setUp(self):
+    #     print("setUp")
     def test_create(self):
         app = Flask(__name__)
         with app.app_context():
             print("test create")
-            #self.fail("some message")
+            # self.fail("some message")
             # print(app.app_context().g.db)
             # conn = app.app_context().g['db']
             # db = g.pop('db', None)
@@ -68,5 +67,5 @@ class TestUser(TestCase):
 
             print("Ahoy!")
 
-    def tearDown(self):
-        print("tearDown")
+    # def tearDown(self):
+    #     print("tearDown")

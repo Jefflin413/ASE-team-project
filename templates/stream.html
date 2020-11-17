@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 
 <!DOCTYPE html>
-<html>
+<html lang="en-US">
 <head>
   <title>stream</title>
   <link href="http://vjs.zencdn.net/4.12/video-js.css" rel="stylesheet">
@@ -16,8 +16,8 @@
         <div class="col-lg-12">
           <div class="content">
 	        <form action="/stream" method="post">
-	      	  <label for="title">Choose a category that best describes your live-streaming for this time</label>
-		      <select name="stream_category" id="stream_category">
+	      	  <label for="stream_category">Choose a category that best describes your live-streaming for this time</label>
+                <select name="stream_category" id="stream_category">
  			    <option value="sports">sports</option>
 			    <option value="travel & events">travel & events</option>
 			    <option value="gaming">gaming</option>

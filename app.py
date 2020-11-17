@@ -1,8 +1,7 @@
-# Python standard libraries
-import json
+""" Python standard libraries
+"""
 import os
 import sqlite3
-import sys
 import boto3
 import time
 
@@ -33,7 +32,6 @@ GOOGLE_DISCOVERY_URL = (
     "https://accounts.google.com/.well-known/openid-configuration"
 )
 
-
 # Flask app setup
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY") or os.urandom(24)
@@ -46,6 +44,7 @@ login_manager.init_app(app)
 
 @login_manager.unauthorized_handler
 def unauthorized():
+    """unauthorized handler"""
     return "You must be logged in to access this content.", 403
 
 
@@ -60,34 +59,24 @@ except sqlite3.OperationalError:
 client = WebApplicationClient(GOOGLE_CLIENT_ID)
 
 
-# Flask-Login helper to retrieve a user from our db
 @login_manager.user_loader
 def load_user(user_id):
+    """Flask-Login helper to retrieve a user from our db"""
     return User.get(user_id)
 
 
 @app.route("/")
 def index():
+    """landing endpoint"""
     if current_user.is_authenticated:
         return render_template("index.html", current_user_name=current_user.name, current_user_email=current_user.email)
-        """
-        return (
-            "<p>Hello, {}! You're logged in! Email: {}</p>"
-            "<div><p>Google Profile Picture:</p>"
-            '<img src="{}" alt="Google profile pic"></img></div>'
-            '<p> user type {}</p>'
-            '<div><a href="/stream">start streaming</a></div>'
-            '<a class="button" href="/logout">Logout</a>'.format(
-                current_user.name, current_user.email, current_user.profile_pic, current_user.usertype
-            )
-        )
-        """
     else:
         return render_template("index.html")
 
 
 @app.route("/login")
 def login():
+    """login with google account"""
     # Find out what URL to hit for Google login
     google_provider_cfg = get_google_provider_cfg()
     authorization_endpoint = google_provider_cfg["authorization_endpoint"]
@@ -104,6 +93,7 @@ def login():
 
 @app.route("/login/callback")
 def callback():
+    """callback function of login endpoint"""
     # Get authorization code Google sent back to you
     code = request.args.get("code")
 
@@ -156,9 +146,9 @@ def callback():
     user = User.get(unique_id)
     # Doesn't exist? Add to database
     if not user:
-        return render_template("newuser.html", userid=unique_id, fullname=users_name, \
+        return render_template("newuser.html", userid=unique_id, fullname=users_name,
                                email=users_email, profile_pic=picture)
-        
+
     # user = User.create(unique_id, users_name, users_email, picture, usertype)
 
     # Begin user session by logging the user in
@@ -167,8 +157,10 @@ def callback():
     # Send user back to homepage
     return redirect(url_for("index"))
 
+
 @app.route("/newuser", methods=['GET', 'POST'])
 def newuser():
+    """endpoint for setting up a new user"""
     if request.method == 'POST':
         userid = request.form.get('uid')
         name = request.form.get('fullname')
@@ -176,8 +168,8 @@ def newuser():
         profile_pic = request.form.get('profile_pic')
         usertype = json.dumps(["viewer, streamer"])
         User.create(userid, name, email, profile_pic, usertype)
-        user = User(id_=userid, name=name, email=email, 
-                    profile_pic=profile_pic, usertype = usertype)
+        user = User(id_=userid, name=name, email=email,
+                    profile_pic=profile_pic, usertype=usertype)
         login_user(user)
         return redirect(url_for("index"))
     else:
@@ -187,11 +179,13 @@ def newuser():
 @app.route("/logout")
 @login_required
 def logout():
+    """logout endpoint"""
     logout_user()
     return redirect(url_for("index"))
 
 
 def get_google_provider_cfg():
+    """get google provider cfg"""
     return requests.get(GOOGLE_DISCOVERY_URL).json()
 
 
@@ -205,15 +199,17 @@ def test():
     else:
         return '<a class="button" href="/login">Google Login</a>'
 
+
 @app.route("/profile")
 @login_required
 def profile():
+    """profile endpoint"""
     if current_user.is_authenticated:
-        return render_template("profile.html", 
-            current_user_name=current_user.name, 
-            current_user_email=current_user.email, 
-            current_user_profile_pic=current_user.profile_pic, 
-            current_user_usertype=current_user.usertype)
+        return render_template("profile.html",
+                               current_user_name=current_user.name,
+                               current_user_email=current_user.email,
+                               current_user_profile_pic=current_user.profile_pic,
+                               current_user_usertype=current_user.usertype)
     else:
         return '<a class="button" href="/login">Google Login</a>'
 
@@ -221,6 +217,7 @@ def profile():
 @app.route("/stream", methods=['GET', 'POST'])
 @login_required
 def stream():
+    """stream endpoint"""
     if request.method == 'POST':
         stream_category = request.form.get('stream_category')
         StackName = 'liveStreaming' + current_user.id
@@ -228,7 +225,7 @@ def stream():
             StackName=StackName,
             TemplateBody=open('live-streaming-on-aws-with-mediastore.template', 'r').read(),
             # If you don't have a template file in the folder then comment the line above and use the line below 
-            #TemplateURL='https://s3.amazonaws.com/solutions-reference/live-streaming-on-aws-with-mediastore/latest/live-streaming-on-aws-with-mediastore.template',
+            # TemplateURL='https://s3.amazonaws.com/solutions-reference/live-streaming-on-aws-with-mediastore/latest/live-streaming-on-aws-with-mediastore.template',
             Parameters=[
                 {
                     'ParameterKey': 'InputType',
@@ -250,14 +247,19 @@ def stream():
             time.sleep(10)
         print('Streaming pipeline created successfully')
         stack_detail = AWS_client.describe_stacks(StackName=StackName)
-        OBS_URL = stack_detail['Stacks'][0]['Outputs'][2]['OutputValue'][:-7] # endpoint for live-streamer to input in OBS
-        m3u8_URL = stack_detail['Stacks'][0]['Outputs'][4]['OutputValue'] # m3u8 file that needs to be shown to the audiences
-        return render_template("stream.html", current_user_name=current_user.name, current_user_email=current_user.email, OBS_URL=OBS_URL, m3u8_URL=m3u8_URL)
+        OBS_URL = stack_detail['Stacks'][0]['Outputs'][2]['OutputValue'][
+                  :-7]  # endpoint for live-streamer to input in OBS
+        m3u8_URL = stack_detail['Stacks'][0]['Outputs'][4][
+            'OutputValue']  # m3u8 file that needs to be shown to the audiences
+        return render_template("stream.html", current_user_name=current_user.name,
+                               current_user_email=current_user.email, OBS_URL=OBS_URL, m3u8_URL=m3u8_URL)
     else:
         if current_user.is_authenticated:
-            return render_template("stream.html", current_user_name=current_user.name, current_user_email=current_user.email)
+            return render_template("stream.html", current_user_name=current_user.name,
+                                   current_user_email=current_user.email)
         else:
             return '<a class="button" href="/login">Google Login</a>'
+
 
 if __name__ == "__main__":
     app.run(ssl_context="adhoc", debug=True)
