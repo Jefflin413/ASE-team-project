@@ -221,26 +221,30 @@ def stream():
     if request.method == 'POST':
         stream_category = request.form.get('stream_category')
         StackName = 'liveStreaming' + current_user.id
-        AWS_client.create_stack(
-            StackName=StackName,
-            TemplateBody=open('live-streaming-on-aws-with-mediastore.template', 'r').read(),
-            # If you don't have a template file in the folder then comment the line above and use the line below 
-            # TemplateURL='https://s3.amazonaws.com/solutions-reference/live-streaming-on-aws-with-mediastore/latest/live-streaming-on-aws-with-mediastore.template',
-            Parameters=[
-                {
-                    'ParameterKey': 'InputType',
-                    'ParameterValue': 'RTMP_PUSH',
-                },
-                {
-                    'ParameterKey': 'InputCIDR',
-                    'ParameterValue': '0.0.0.0/0',
-                }
-            ],
-            TimeoutInMinutes=10,
-            Capabilities=[
-                'CAPABILITY_IAM',
-            ],
-        )
+        try:
+            AWS_client.create_stack(
+                StackName=StackName,
+                TemplateBody=open('live-streaming-on-aws-with-mediastore.template', 'r').read(),
+                # If you don't have a template file in the folder then comment the line above and use the line below 
+                # TemplateURL='https://s3.amazonaws.com/solutions-reference/live-streaming-on-aws-with-mediastore/latest/live-streaming-on-aws-with-mediastore.template',
+                Parameters=[
+                    {
+                        'ParameterKey': 'InputType',
+                        'ParameterValue': 'RTMP_PUSH',
+                    },
+                    {
+                        'ParameterKey': 'InputCIDR',
+                        'ParameterValue': '0.0.0.0/0',
+                    }
+                ],
+                TimeoutInMinutes=10,
+                Capabilities=[
+                    'CAPABILITY_IAM',
+                ],
+            )
+        except:
+            return "told you not to do it"
+
 
         while AWS_client.describe_stacks(StackName=StackName)['Stacks'][0]['StackStatus'] != 'CREATE_COMPLETE':
             print('CloudFormation is creating the streaming pipeline, please wait...')
