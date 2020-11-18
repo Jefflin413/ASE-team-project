@@ -3,6 +3,7 @@
 import os
 import sqlite3
 import boto3
+from botocore.config import Config
 import time
 
 # Third party libraries
@@ -23,7 +24,13 @@ from utils.user import User
 import json
 
 # AWS Client
-AWS_client = boto3.client('cloudformation')
+
+my_config = Config(
+    region_name = 'us-west-2'
+)
+
+AWS_client = boto3.client('cloudformation', config=my_config)
+# AWS_client = boto3.client('cloudformation')
 
 # Configuration
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)
