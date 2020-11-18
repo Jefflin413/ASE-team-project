@@ -17,7 +17,7 @@ def get_db():
     return g.db
 
 
-def close_db(e=None):
+def close_db():
     """close the database"""
     db = g.pop("db", None)
 

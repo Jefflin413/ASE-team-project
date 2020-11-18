@@ -26,7 +26,7 @@ import json
 # AWS Client
 
 my_config = Config(
-    region_name = 'us-east-1'
+    region_name='us-east-1'
 )
 
 AWS_client = boto3.client('cloudformation', config=my_config)
@@ -226,7 +226,7 @@ def profile():
 def stream():
     """stream endpoint"""
     if request.method == 'POST':
-        stream_category = request.form.get('stream_category')
+        # stream_category = request.form.get('stream_category')
         StackName = 'liveStreaming' + current_user.id
         try:
             AWS_client.create_stack(
@@ -249,9 +249,8 @@ def stream():
                     'CAPABILITY_IAM',
                 ],
             )
-        except:
+        except (ValueError, Exception):
             return "told you not to do it"
-
 
         while AWS_client.describe_stacks(StackName=StackName)['Stacks'][0]['StackStatus'] != 'CREATE_COMPLETE':
             print('CloudFormation is creating the streaming pipeline, please wait...')
