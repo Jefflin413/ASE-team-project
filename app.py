@@ -26,7 +26,7 @@ import json
 # AWS Client
 
 my_config = Config(
-    region_name = 'us-west-2'
+    region_name = 'us-east-1'
 )
 
 AWS_client = boto3.client('cloudformation', config=my_config)
