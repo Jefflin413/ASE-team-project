@@ -22,6 +22,7 @@ import requests
 from utils.db import init_db_command
 from utils.user import User
 import json
+import utils.db as db
 
 # AWS Client
 
@@ -78,7 +79,9 @@ def index():
     if current_user.is_authenticated:
         return render_template("index.html", current_user_name=current_user.name, current_user_email=current_user.email)
     else:
-        return render_template("index.html")
+        a = db.get_streaming()
+        print(a)
+        return render_template("index.html", streams = a)
 
 
 @app.route("/login")
