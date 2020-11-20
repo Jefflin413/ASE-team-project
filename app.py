@@ -1,12 +1,13 @@
-""" Python standard libraries
+""" 
+Python standard libraries
 """
 import os
 import sqlite3
-import boto3
-from botocore.config import Config
 import time
 
 # Third party libraries
+import boto3
+from botocore.config import Config
 from flask import Flask, redirect, request, url_for, render_template
 from flask_login import (
     LoginManager,
@@ -25,15 +26,13 @@ import json
 import utils.db as db
 
 # AWS Client
-
-my_config = Config(
+boto3_config = Config(
     region_name='us-east-1'
 )
-
-AWS_client = boto3.client('cloudformation', config=my_config)
+AWS_client = boto3.client('cloudformation', config=boto3_config)
 # AWS_client = boto3.client('cloudformation')
 
-# Configuration
+# Google Login Configuration
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)
 GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", None)
 GOOGLE_DISCOVERY_URL = (
@@ -49,12 +48,10 @@ app.secret_key = os.environ.get("SECRET_KEY") or os.urandom(24)
 login_manager = LoginManager()
 login_manager.init_app(app)
 
-
 @login_manager.unauthorized_handler
 def unauthorized():
     """unauthorized handler"""
     return "You must be logged in to access this content.", 403
-
 
 # Naive database setup
 try:
@@ -64,8 +61,7 @@ except sqlite3.OperationalError:
     pass
 
 # OAuth2 client setup
-client = WebApplicationClient(GOOGLE_CLIENT_ID)
-
+Google_client = WebApplicationClient(GOOGLE_CLIENT_ID)
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -76,12 +72,11 @@ def load_user(user_id):
 @app.route("/")
 def index():
     """landing endpoint"""
+    current_streaming_list = db.get_streaming()
     if current_user.is_authenticated:
-        return render_template("index.html", current_user_name=current_user.name, current_user_email=current_user.email)
+        return render_template("index.html", current_user_name=current_user.name, streams = current_streaming_list)
     else:
-        a = db.get_streaming()
-        print(a)
-        return render_template("index.html", streams = a)
+        return render_template("index.html", streams = current_streaming_list)
 
 
 @app.route("/login")
@@ -93,7 +88,7 @@ def login():
 
     # Use library to construct the request for login and provide
     # scopes that let you retrieve user's profile from Google
-    request_uri = client.prepare_request_uri(
+    request_uri = Google_client.prepare_request_uri(
         authorization_endpoint,
         redirect_uri=request.base_url + "/callback",
         scope=["openid", "email", "profile"],
@@ -113,7 +108,7 @@ def callback():
     token_endpoint = google_provider_cfg["token_endpoint"]
 
     # Prepare and send request to get tokens! Yay tokens!
-    token_url, headers, body = client.prepare_token_request(
+    token_url, headers, body = Google_client.prepare_token_request(
         token_endpoint,
         authorization_response=request.url,
         redirect_url=request.base_url,
@@ -127,13 +122,13 @@ def callback():
     )
 
     # Parse the tokens!
-    client.parse_request_body_response(json.dumps(token_response.json()))
+    Google_client.parse_request_body_response(json.dumps(token_response.json()))
 
     # Now that we have tokens (yay) let's find and hit URL
     # from Google that gives you user's profile information,
     # including their Google Profile Image and Email
     userinfo_endpoint = google_provider_cfg["userinfo_endpoint"]
-    uri, headers, body = client.add_token(userinfo_endpoint)
+    uri, headers, body = Google_client.add_token(userinfo_endpoint)
     userinfo_response = requests.get(uri, headers=headers, data=body)
 
     # We want to make sure their email is verified.
@@ -232,47 +227,84 @@ def stream():
         # stream_category = request.form.get('stream_category')
         StackName = 'liveStreaming' + current_user.id
         try:
-            AWS_client.create_stack(
-                StackName=StackName,
-                TemplateBody=open('live-streaming-on-aws-with-mediastore.template', 'r').read(),
-                # If you don't have a template file in the folder then comment the line above and use the line below 
-                # TemplateURL='https://s3.amazonaws.com/solutions-reference/live-streaming-on-aws-with-mediastore/latest/live-streaming-on-aws-with-mediastore.template',
-                Parameters=[
-                    {
-                        'ParameterKey': 'InputType',
-                        'ParameterValue': 'RTMP_PUSH',
-                    },
-                    {
-                        'ParameterKey': 'InputCIDR',
-                        'ParameterValue': '0.0.0.0/0',
-                    }
-                ],
-                TimeoutInMinutes=10,
-                Capabilities=[
-                    'CAPABILITY_IAM',
-                ],
-            )
-        except (ValueError, Exception):
-            return "told you not to do it"
+            # if the streaming pipeline already exists
+            AWS_client.describe_stacks(StackName=StackName)
+            return render_template("stream.html", current_user_name=current_user.name)
 
-        while AWS_client.describe_stacks(StackName=StackName)['Stacks'][0]['StackStatus'] != 'CREATE_COMPLETE':
-            print('CloudFormation is creating the streaming pipeline, please wait...')
-            time.sleep(10)
-        print('Streaming pipeline created successfully')
-        stack_detail = AWS_client.describe_stacks(StackName=StackName)
-        OBS_URL = stack_detail['Stacks'][0]['Outputs'][2]['OutputValue'][
-                  :-7]  # endpoint for live-streamer to input in OBS
-        m3u8_URL = stack_detail['Stacks'][0]['Outputs'][4][
-            'OutputValue']  # m3u8 file that needs to be shown to the audiences
-        return render_template("stream.html", current_user_name=current_user.name,
-                               current_user_email=current_user.email, OBS_URL=OBS_URL, m3u8_URL=m3u8_URL)
+        except (ValueError, Exception):
+            # if there's no pipeline for this streamer
+            try:
+                AWS_client.create_stack(
+                    StackName=StackName,
+                    TemplateBody=open('live-streaming-on-aws-with-mediastore.template', 'r').read(),
+                    # If you don't have a template file in the folder then comment the line above and use the line below 
+                    # TemplateURL='https://s3.amazonaws.com/solutions-reference/live-streaming-on-aws-with-mediastore/latest/live-streaming-on-aws-with-mediastore.template',
+                    Parameters=[
+                        {
+                            'ParameterKey': 'InputType',
+                            'ParameterValue': 'RTMP_PUSH',
+                        },
+                        {
+                            'ParameterKey': 'InputCIDR',
+                            'ParameterValue': '0.0.0.0/0',
+                        }
+                    ],
+                    TimeoutInMinutes=10,
+                    Capabilities=[
+                        'CAPABILITY_IAM',
+                    ],
+                )
+                return render_template("stream.html", current_user_name=current_user.name)
+            except (ValueError, Exception):
+                return "Fail to start creating streaming pipeline, try it again later"        
     else:
         if current_user.is_authenticated:
-            return render_template("stream.html", current_user_name=current_user.name,
-                                   current_user_email=current_user.email)
+            return render_template("stream.html", current_user_name=current_user.name)
         else:
             return '<a class="button" href="/login">Google Login</a>'
 
+@app.route("/stream/describe_stack")
+@login_required
+def stream_describe_stack():
+    # Let the stream page can dynamically show the status of the AWS CloudFormation stack.
+    StackName = 'liveStreaming' + current_user.id
+    try:
+        # if the streaming pipeline already exists
+        stack_detail = AWS_client.describe_stacks(StackName=StackName)
+        if stack_detail['Stacks'][0]['StackStatus'] != 'CREATE_COMPLETE':
+            Context = "Your Streaming Pipeline is under construction..."
+            OBS_URL = ""
+            Stream_Key = ""
+        else:
+            Context = "Your Streaming Pipeline is ready, using the information shown below in OBS and start your streaming"
+            OBS_URL = stack_detail['Stacks'][0]['Outputs'][2]['OutputValue'][
+                  :-7] # endpoint for live-streamer to input in OBS
+            Stream_Key = "stream"
+
+    except (ValueError, Exception):
+        Context = "You haven't started the construction of your streaming pipeline, choose a category and click \"Build Pipeline\" to start"
+        OBS_URL = ""
+        Stream_Key = ""
+
+    return render_template('stream_describe_stack.html', Context=Context, OBS_URL=OBS_URL, Stream_Key=Stream_Key)
+
+@app.route("/stream/show_video_player")
+@login_required
+def stream_show_video_player():
+    # Show a video player on the stream page.
+    # If the pipeline is completed, the m3u8 URL will be embedded into the player
+    # Otherwise, the URL will be empty
+    StackName = 'liveStreaming' + current_user.id
+    try:
+        # if the streaming pipeline already exists
+        stack_detail = AWS_client.describe_stacks(StackName=StackName)
+        if stack_detail['Stacks'][0]['StackStatus'] != 'CREATE_COMPLETE':
+            return render_template('stream_show_video_player.html', m3u8_URL="")
+        else:
+            return render_template('stream_show_video_player.html', m3u8_URL=stack_detail['Stacks'][0]['Outputs'][4][
+            'OutputValue'])
+    except (ValueError, Exception):
+        return render_template('stream_show_video_player.html', m3u8_URL="")
 
 if __name__ == "__main__":
     app.run(ssl_context="adhoc", debug=True)

@@ -29,33 +29,49 @@
 		      </select>
 		      <input type="submit" value="Build pipeline">
 	        </form>
-	        <div style="color:red;">Please do not close/refresh/resubmit the page after submitting, the work will be done in roughly 5 minutes</div>
-	        <div>Once the construction success, the webpage will be refreshed automatically and show the OBS URL, stream key, as well as the video player playing your live-streaming after you click on "start streaming" in OBS</div>
-	        <div>In the meanwhile, you can read the instruction of the usage and the installation of <a href="https://obsproject.com/">OBS</a> at the bottom of this <a href="https://aws.amazon.com/tw/blogs/media/part1-how-to-send-live-video-to-aws-elemental-mediastore/">website</a></div>
+	        
+	        <div>After you request to build a pipeline, the construction will cost roughly 5 minutes. In the meanwhile, you can read the instruction of the usage and the installation of <a href="https://obsproject.com/">OBS</a> at the bottom of this <a href="https://aws.amazon.com/tw/blogs/media/part1-how-to-send-live-video-to-aws-elemental-mediastore/">website</a></div>
 
-	        {% if OBS_URL %}
-		      <h3>OBS_URL: {{OBS_URL}}</h3>
-		      <h3>Stream key: stream</h3>
-            <!-- CSS  -->
-     		<link href="https://vjs.zencdn.net/7.2.3/video-js.css" rel="stylesheet">
-			<!-- HTML -->
-			
-	 		<!--video id='hls-example'  class="video-js vjs-default-skin" width="400" height="300" controls>
-	 			<source type="application/x-mpegURL" src="http://bitdash-a.akamaihd.net/content/MI201109210084_1/m3u8s/f08e80da-bf1d-4e3d-8899-f0f6155f6efa.m3u8">
-			</video--> 
-			<video id='hls-example'  class="video-js vjs-default-skin" width="400" height="300" controls>
-				<source type="application/x-mpegURL" src={{m3u8_URL}}>
-			</video>
-	 		<!-- JS code -->
-	 		<!-- If you'd like to support IE8 (for Video.js versions prior to v7) -->
-	 		<script src="https://vjs.zencdn.net/ie8/ie8-version/videojs-ie8.min.js"></script>
-	 		<script src="https://cdnjs.cloudflare.com/ajax/libs/videojs-contrib-hls/5.14.1/videojs-contrib-hls.js"></script>
-	 		<script src="https://vjs.zencdn.net/7.2.3/video.js"></script>
-			<script>
-	 			let player = videojs('hls-example');
-	 			player.play();
-	 		</script>
-	        {% endif %}	
+	        <div></div>
+
+	        <div id="place_for_AWS_pipeline"></div>
+	        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+	        <script>
+	          var keep_asking = window.setInterval(ask_AWS, 5000);
+			  function ask_AWS() {
+ 			    $.ajax({
+                  url: "/stream/describe_stack",
+                  type: "get",
+                  data: {},
+                  success: function(response) {
+                  $("#place_for_AWS_pipeline").html(response);
+                  },
+                  error: function(xhr) {
+                  //Do Something to handle error
+                  }
+                });
+			  }
+	        </script>
+
+	        <button id="show_video_player" value="Start Streaming" onclick=show_video_player()>Start Streaming</button>
+	        <div>You must first have your own streaming pipeline ready, and start streaming using OBS, then you can click on this bottom to see your live-streaming on the website</div>
+
+	        <div id="place_for_video_player"></div>
+	        <script>
+	          function show_video_player(){
+		        $.ajax({
+      			  url: "/stream/show_video_player",
+      			  type: "get",
+      			  data: {},
+      			  success: function(response) {
+        		    $("#place_for_video_player").html(response);
+      			  },
+      		 	  error: function(xhr) {
+        		  //Do Something to handle error
+      			  }
+    		    });
+		      };
+			</script>
           </div>
         </div>
       </div>
