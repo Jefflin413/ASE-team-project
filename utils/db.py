@@ -33,6 +33,7 @@ def init_db():
         db.executescript(f.read().decode("utf8"))
 
 
+
 @click.command("init-db")
 @with_appcontext
 def init_db_command():
@@ -45,3 +46,29 @@ def init_app(app):
     """init_app"""
     app.teardown_appcontext(close_db)
     app.cli.add_command(init_db_command)
+
+
+def get_streaming():
+    """get the data of specific user"""
+    db = get_db()
+    res = db.execute(
+        "SELECT * FROM streaming"
+    ).fetchall()
+    if not res:
+        return None
+    
+    ret = []
+    for row in res:
+        ret.append({'id': row[0], 'name': row[1], 'category': row[2]})
+    return ret
+
+
+def create_stream(id_, name, email, profile_pic, usertype):
+    """create an user"""
+    db = get_db()
+    db.execute(
+        "INSERT INTO user (id, name, email, profile_pic, usertype)"
+        " VALUES (?, ?, ?, ?, ?)",
+        (id_, name, email, profile_pic, usertype),
+    )
+    db.commit()
