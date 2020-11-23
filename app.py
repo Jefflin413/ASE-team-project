@@ -171,7 +171,7 @@ def newuser():
         name = request.form.get('fullname')
         email = request.form.get('email')
         profile_pic = request.form.get('profile_pic')
-        usertype = json.dumps(["viewer, streamer"])
+        usertype = json.dumps(["company", "streamer"])
         User.create(userid, name, email, profile_pic, usertype)
         user = User(id_=userid, name=name, email=email,
                     profile_pic=profile_pic, usertype=usertype)
@@ -327,7 +327,22 @@ def view_id(id_):
     m3u8_URL = db.get_streaming_m3u8(id_)
     if m3u8_URL:
         m3u8_URL = m3u8_URL[0]
-    return render_template('view_id.html', m3u8_URL=m3u8_URL, current_user_name=current_user.name)
+    if current_user.is_authenticated:
+        return render_template('view_id.html', m3u8_URL=m3u8_URL, current_user_name=current_user.name)
+    else:
+        return render_template('view_id.html', m3u8_URL=m3u8_URL)
 
+@app.route("/company/<type_>", methods=['GET', 'POST'])
+@login_required
+def company(type_):
+    if 'company' not in json.loads(current_user.usertype):
+        return "You are not a company.", 403
+    
+    if type_ == 'category':
+        if request.method == 'GET':
+            category_all = db.get_analytics_category_all()
+            print(category_all)
+            return render_template('company.html', category_all=category_all)
+   
 if __name__ == "__main__":
     app.run(ssl_context="adhoc", debug=True)

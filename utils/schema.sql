@@ -9,7 +9,8 @@ CREATE TABLE user (
 CREATE TABLE watch_history (
   watcher TEXT,
   streamer TEXT NOT NULL,
-  start_time TIMESTAMP NOT NULL,
+  category TEXT NOT NULL,
+  start_time TIMESTAMP,
   end_time TIMESTAMP,
   FOREIGN KEY (streamer) REFERENCES user(id)
 );
@@ -23,10 +24,37 @@ CREATE TABLE streaming (
 );
 
 INSERT INTO user (id, name, email, usertype)
-VALUES( 'test', 'test' , 'test@test', 'streamer');
+VALUES( 'test1', 'test1' , 'test1@test', 'streamer');
+
+INSERT INTO user (id, name, email, usertype)
+VALUES( 'test2', 'test2' , 'test2@test', 'streamer');
+
+INSERT INTO user (id, name, email, usertype)
+VALUES( 'test3', 'test3' , 'test3@test', 'streamer');
+
+INSERT INTO user (id, name, email, usertype)
+VALUES( 'company1', 'company1' , 'company1@test', 'company');
 
 INSERT INTO streaming (id, name, category)
-VALUES( 'test', 'test_stream' , 'Gaming');
+VALUES( 'test1', 'test_stream1' , 'Gaming');
 
+INSERT INTO streaming (id, name, category)
+VALUES( 'test2', 'test_stream2' , 'Life');
 
+INSERT INTO streaming (id, name, category)
+VALUES( 'test3', 'test_stream3' , 'Sports');
 
+INSERT INTO watch_history (watcher, streamer, category)
+VALUES( 'nonuser', 'test_stream1', 'Gaming');
+
+INSERT INTO watch_history (watcher, streamer, category)
+VALUES( 'nonuser', 'test_stream1', 'Gaming');
+
+INSERT INTO watch_history (watcher, streamer, category)
+VALUES( 'test1', 'test_stream2', 'Life');
+
+INSERT INTO watch_history (watcher, streamer, category)
+VALUES( 'test2', 'test_stream3', 'Life');
+
+INSERT INTO watch_history (watcher, streamer, category)
+VALUES( 'nonuser', 'test_stream3', 'Sports');

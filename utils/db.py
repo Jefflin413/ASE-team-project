@@ -4,7 +4,7 @@ import sqlite3
 import click
 from flask import current_app, g
 from flask.cli import with_appcontext
-
+from collections import defaultdict
 
 def get_db():
     """get the database"""
@@ -110,4 +110,19 @@ def delete_stream(id_):
     )
     db.commit()
 
-
+def get_analytics_category_all():
+    db = get_db()
+    res = db.execute(
+        "SELECT * FROM watch_history"
+    ).fetchall()
+    if not res:
+        return None
+    
+    ret = defaultdict(int)
+    for row in res:
+        category = row[2]
+        ret[category] += 1
+        #rows.append({'watcher': row[0], 'streamer': row[1], 'category': row[2], 'start_time': row[2]})
+    
+    ret = [{"x": k, "value":v} for k,v in ret.items()]
+    return ret
