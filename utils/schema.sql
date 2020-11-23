@@ -18,6 +18,7 @@ CREATE TABLE streaming (
   id TEXT NOT NULL,
   name TEXT NOT NULL,
   category TEXT NOT NULL,
+  m3u8_URL TEXT,
   FOREIGN KEY (id) REFERENCES user(id)
 );
 

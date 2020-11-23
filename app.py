@@ -223,8 +223,9 @@ def profile():
 @login_required
 def stream():
     """stream endpoint"""
-    if request.method == 'POST':
-        # stream_category = request.form.get('stream_category')
+    if request.method == 'POST' and 'stream_category' in request.form:
+        # build pipeline request
+        
         StackName = 'liveStreaming' + current_user.id
         try:
             # if the streaming pipeline already exists
@@ -254,10 +255,20 @@ def stream():
                         'CAPABILITY_IAM',
                     ],
                 )
+                stream_category = request.form.get('stream_category')
+                db.create_stream(current_user.id, current_user.name, stream_category)
                 return render_template("stream.html", current_user_name=current_user.name)
             except (ValueError, Exception):
-                return "Fail to start creating streaming pipeline, try it again later"        
+                return "Fail to start creating streaming pipeline, try it again later" 
+    elif request.method == 'POST':
+        # delete pipeline request
+        StackName = 'liveStreaming' + current_user.id
+        AWS_client.delete_stack(StackName=StackName)
+        db.delete_stream(current_user.id)
+        return render_template("stream.html", current_user_name=current_user.name)
+
     else:
+        # just access to the endpoint
         if current_user.is_authenticated:
             return render_template("stream.html", current_user_name=current_user.name)
         else:
@@ -273,6 +284,10 @@ def stream_describe_stack():
         stack_detail = AWS_client.describe_stacks(StackName=StackName)
         if stack_detail['Stacks'][0]['StackStatus'] != 'CREATE_COMPLETE':
             Context = "Your Streaming Pipeline is under construction..."
+            OBS_URL = ""
+            Stream_Key = ""
+        elif stack_detail['Stacks'][0]['StackStatus'] == 'DELETE_IN_PROGRESS':
+            Context = "Deleting Your Streaming Pipeline, if you want to build another one, please wait until this deletion complete"
             OBS_URL = ""
             Stream_Key = ""
         else:
@@ -301,10 +316,18 @@ def stream_show_video_player():
         if stack_detail['Stacks'][0]['StackStatus'] != 'CREATE_COMPLETE':
             return render_template('stream_show_video_player.html', m3u8_URL="")
         else:
-            return render_template('stream_show_video_player.html', m3u8_URL=stack_detail['Stacks'][0]['Outputs'][4][
-            'OutputValue'])
+            m3u8_URL=stack_detail['Stacks'][0]['Outputs'][4]['OutputValue']
+            db.update_stream(current_user.id, m3u8_URL)
+            return render_template('stream_show_video_player.html', m3u8_URL=m3u8_URL)
     except (ValueError, Exception):
         return render_template('stream_show_video_player.html', m3u8_URL="")
+
+@app.route("/view/<id_>")
+def view_id(id_):
+    m3u8_URL = db.get_streaming_m3u8(id_)
+    if m3u8_URL:
+        m3u8_URL = m3u8_URL[0]
+    return render_template('view_id.html', m3u8_URL=m3u8_URL, current_user_name=current_user.name)
 
 if __name__ == "__main__":
     app.run(ssl_context="adhoc", debug=True)

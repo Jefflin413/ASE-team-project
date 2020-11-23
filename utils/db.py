@@ -63,12 +63,51 @@ def get_streaming():
     return ret
 
 
-def create_stream(id_, name, email, profile_pic, usertype):
-    """create an user"""
+def create_stream(id_, name, category):
+    """create an stream"""
     db = get_db()
     db.execute(
-        "INSERT INTO user (id, name, email, profile_pic, usertype)"
-        " VALUES (?, ?, ?, ?, ?)",
-        (id_, name, email, profile_pic, usertype),
+        "INSERT INTO streaming (id, name, category)"
+        " VALUES (?, ?, ?)",
+        (id_, name, category),
     )
     db.commit()
+
+def update_stream(id_, m3u8_URL):
+    """update m3u8_URL for a stream"""
+    db = get_db()
+    db.execute(
+        "UPDATE streaming"
+        " SET m3u8_URL = (?)"
+        " WHERE id = (?)",
+        (m3u8_URL, id_),
+    )
+    db.commit()
+
+def get_streaming_m3u8(id_):
+    """get the data of specific user"""
+    db = get_db()
+    res = db.execute(
+        "SELECT m3u8_URL FROM streaming"
+        " WHERE id = (?)",
+        (id_,)
+    ).fetchall()
+    if not res:
+        return None
+    
+    ret = []
+    for row in res:
+        ret.append(row[0])
+    return ret
+
+def delete_stream(id_):
+    """delete a stream"""
+    db = get_db()
+    db.execute(
+        "DELETE FROM streaming"
+        " WHERE id = (?)",
+        (id_,),
+    )
+    db.commit()
+
+
