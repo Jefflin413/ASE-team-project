@@ -328,8 +328,10 @@ def view_id(id_):
     if m3u8_URL:
         m3u8_URL = m3u8_URL[0]
     if current_user.is_authenticated:
+        db.insert_watch_history(current_user.id, id_)
         return render_template('view_id.html', m3u8_URL=m3u8_URL, current_user_name=current_user.name)
     else:
+        db.insert_watch_history('nonuser', id_)
         return render_template('view_id.html', m3u8_URL=m3u8_URL)
 
 @app.route("/company/<type_>", methods=['GET', 'POST'])

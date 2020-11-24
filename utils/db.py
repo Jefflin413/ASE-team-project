@@ -56,6 +56,7 @@ def get_streaming():
     ).fetchall()
     if not res:
         return None
+    db.commit()
     
     ret = []
     for row in res:
@@ -94,6 +95,7 @@ def get_streaming_m3u8(id_):
     ).fetchall()
     if not res:
         return None
+    db.commit()
     
     ret = []
     for row in res:
@@ -108,6 +110,29 @@ def delete_stream(id_):
         " WHERE id = (?)",
         (id_,),
     )
+    db.commit()
+
+def insert_watch_history(watcher, streamer):
+    if streamer == None:
+        return
+    
+    db = get_db()
+    res =  db.execute(
+        "SELECT category FROM streaming"
+        " WHERE id = (?)",
+        (streamer,),
+    ).fetchone()
+    
+    if res == None:
+        return
+    category = res[0]
+    
+    db.execute(
+        "INSERT INTO watch_history (watcher, streamer, category)"
+        " VALUES (?,?,?)",
+        (watcher, streamer, category),
+    )
+    
     db.commit()
 
 def get_analytics_category_all():
