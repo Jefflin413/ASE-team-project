@@ -342,7 +342,7 @@ def company(type_):
         if request.method == 'GET':
             category_all = db.get_analytics_category_all()
             print(category_all)
-            return render_template('company.html', category_all=category_all)
+            return render_template('company.html', category_all=category_all, current_user_name=current_user.name)
    
 if __name__ == "__main__":
     app.run(ssl_context="adhoc", debug=True)
