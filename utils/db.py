@@ -5,6 +5,9 @@ import click
 from flask import current_app, g
 from flask.cli import with_appcontext
 from collections import defaultdict
+from datetime import date
+
+
 
 def get_db():
     """get the database"""
@@ -126,11 +129,13 @@ def insert_watch_history(watcher, streamer):
     if res == None:
         return
     category = res[0]
+    today = date.today()
+    time = today.strftime("%Y/%m/%d")
     
     db.execute(
-        "INSERT INTO watch_history (watcher, streamer, category)"
-        " VALUES (?,?,?)",
-        (watcher, streamer, category),
+        "INSERT INTO watch_history (watcher, streamer, category, start_time)"
+        " VALUES (?,?,?,?)",
+        (watcher, streamer, category, time),
     )
     
     db.commit()
@@ -149,5 +154,82 @@ def get_analytics_category_all():
         ret[category] += 1
         #rows.append({'watcher': row[0], 'streamer': row[1], 'category': row[2], 'start_time': row[2]})
     
+    ret_list = list(ret.keys())
     ret = [{"x": k, "value":v} for k,v in ret.items()]
-    return ret
+    
+    return ret, ret_list
+
+def get_analytics_category(category):
+    db = get_db()
+    res = db.execute(
+        "SELECT * FROM watch_history WHERE category='" + category + "'"
+    ).fetchall()
+    if not res:
+        return None
+    
+    ret = defaultdict(int)
+    for row in res:
+        date = row[3]
+        ret[date] += 1
+        #rows.append({'watcher': row[0], 'streamer': row[1], 'category': row[2], 'start_time': row[2]})
+    
+    ret = sorted([{"date": k, "value":v} for k,v in ret.items()], key = lambda x: x['date'])
+    
+    db = get_db()
+    res = db.execute(
+        "SELECT DISTINCT category FROM watch_history"
+    ).fetchall()
+    
+    ret_list = []
+    if res:
+        for row in res:
+            ret_list.append(row[0])
+    
+    return ret, ret_list
+
+def get_analytics_user_all():
+    db = get_db()
+    res = db.execute(
+        "SELECT * FROM watch_history"
+    ).fetchall()
+    if not res:
+        return None
+    
+    ret = defaultdict(int)
+    for row in res:
+        streamer = row[1]
+        ret[streamer] += 1
+        #rows.append({'watcher': row[0], 'streamer': row[1], 'category': row[2], 'start_time': row[2]})
+    
+    ret_list = list(ret.keys())
+    ret = [{"x": k, "value":v} for k,v in ret.items()]
+    
+    return ret, ret_list
+
+def get_analytics_user(userid):
+    db = get_db()
+    res = db.execute(
+        "SELECT * FROM watch_history where streamer='" + userid + "'"
+    ).fetchall()
+    if not res:
+        return None
+    
+    ret = defaultdict(int)
+    for row in res:
+        date = row[3]
+        ret[date] += 1
+        #rows.append({'watcher': row[0], 'streamer': row[1], 'category': row[2], 'start_time': row[2]})
+    
+    ret = sorted([{"date": k, "value":v} for k,v in ret.items()], key = lambda x: x['date'])
+    
+    db = get_db()
+    res = db.execute(
+        "SELECT DISTINCT streamer FROM watch_history"
+    ).fetchall()
+    
+    ret_list = []
+    if res:
+        for row in res:
+            ret_list.append(row[0])
+    
+    return ret, ret_list

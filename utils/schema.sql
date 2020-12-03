@@ -10,8 +10,8 @@ CREATE TABLE watch_history (
   watcher TEXT,
   streamer TEXT NOT NULL,
   category TEXT NOT NULL,
-  start_time TIMESTAMP,
-  end_time TIMESTAMP,
+  start_time TEXT,
+  end_time TEXT,
   FOREIGN KEY (streamer) REFERENCES user(id)
 );
 
@@ -44,17 +44,53 @@ VALUES( 'test2', 'test_stream2' , 'Life');
 INSERT INTO streaming (id, name, category)
 VALUES( 'test3', 'test_stream3' , 'Sports');
 
-INSERT INTO watch_history (watcher, streamer, category)
-VALUES( 'nonuser', 'test_stream1', 'Gaming');
+INSERT INTO watch_history (watcher, streamer, category, start_time)
+VALUES( 'nonuser', 'test1', 'Gaming', '2020/11/30');
 
-INSERT INTO watch_history (watcher, streamer, category)
-VALUES( 'nonuser', 'test_stream1', 'Gaming');
+INSERT INTO watch_history (watcher, streamer, category, start_time)
+VALUES( 'nonuser', 'test1', 'Gaming', '2020/11/30');
 
-INSERT INTO watch_history (watcher, streamer, category)
-VALUES( 'test1', 'test_stream2', 'Life');
+INSERT INTO watch_history (watcher, streamer, category, start_time)
+VALUES( 'nonuser', 'test1', 'Gaming', '2020/11/20');
 
-INSERT INTO watch_history (watcher, streamer, category)
-VALUES( 'test2', 'test_stream3', 'Life');
+INSERT INTO watch_history (watcher, streamer, category, start_time)
+VALUES( 'nonuser', 'test1', 'Gaming', '2020/11/20');
 
-INSERT INTO watch_history (watcher, streamer, category)
-VALUES( 'nonuser', 'test_stream3', 'Sports');
+INSERT INTO watch_history (watcher, streamer, category, start_time)
+VALUES( 'nonuser', 'test1', 'Gaming', '2020/11/28');
+
+INSERT INTO watch_history (watcher, streamer, category, start_time)
+VALUES( 'nonuser', 'test1', 'Gaming', '2020/11/29');
+
+INSERT INTO watch_history (watcher, streamer, category, start_time)
+VALUES( 'test1', 'test2', 'Life', '2020/11/30');
+
+INSERT INTO watch_history (watcher, streamer, category, start_time)
+VALUES( 'test2', 'test3', 'Life', '2020/11/29');
+
+INSERT INTO watch_history (watcher, streamer, category, start_time)
+VALUES( 'test1', 'test2', 'Life', '2020/11/28');
+
+INSERT INTO watch_history (watcher, streamer, category, start_time)
+VALUES( 'test2', 'test3', 'Life', '2020/11/20');
+
+INSERT INTO watch_history (watcher, streamer, category, start_time)
+VALUES( 'nonuser', 'test3', 'Sports', '2020/11/11');
+
+INSERT INTO watch_history (watcher, streamer, category, start_time)
+VALUES( 'nonuser', 'test3', 'Sports', '2020/11/12');
+
+INSERT INTO watch_history (watcher, streamer, category, start_time)
+VALUES( 'nonuser', 'test3', 'Sports', '2020/11/20');
+
+INSERT INTO watch_history (watcher, streamer, category, start_time)
+VALUES( 'nonuser', 'test3', 'Sports', '2020/11/20');
+
+INSERT INTO watch_history (watcher, streamer, category, start_time)
+VALUES( 'nonuser', 'test3', 'Sports', '2020/11/20');
+
+INSERT INTO watch_history (watcher, streamer, category, start_time)
+VALUES( 'nonuser', 'test3', 'Sports', '2020/11/20');
+
+INSERT INTO watch_history (watcher, streamer, category, start_time)
+VALUES( 'nonuser', 'test3', 'Sports', '2020/11/30');

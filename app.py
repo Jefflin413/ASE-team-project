@@ -346,10 +346,24 @@ def company(type_):
     
     if type_ == 'category':
         if request.method == 'GET':
-            category_all = db.get_analytics_category_all()
-            print(category_all)
-            return render_template('company.html', category_all=category_all, current_user_name=current_user.name)
-
+            category_all, cat_list = db.get_analytics_category_all()
+            print(category_all, cat_list)
+            return render_template('company.html', cat_list = cat_list, typee = type_, data_all=category_all, current_user_name=current_user.name)
+        else:
+            selected = request.form['category']
+            category_time, cat_list = db.get_analytics_category(selected)
+            print(category_time, cat_list)
+            return render_template('company2.html', cat_list = cat_list, typee = type_, data_all=category_time, current_user_name=current_user.name)
+    else:
+        if request.method == 'GET':
+            user_all, cat_list = db.get_analytics_user_all()
+            print(user_all, cat_list)
+            return render_template('company.html', cat_list = cat_list, typee = type_, data_all=user_all, current_user_name=current_user.name)
+        else:
+            selected = request.form['category']
+            user_time, cat_list = db.get_analytics_user(selected)
+            print(user_time, cat_list)
+            return render_template('company2.html', cat_list = cat_list, typee = type_, data_all=user_time, current_user_name=current_user.name)
 # socketio, it is for the chating function on the view page
 
 @socketio.on('send_message')
@@ -376,4 +390,4 @@ def handle_leave_room_event(data):
    
 if __name__ == "__main__":
     #app.run(ssl_context="adhoc", debug=True)
-    socketio.run(app, keyfile='localhost.key', certfile='localhost.crt', debug=True)
+    socketio.run(app, host='0.0.0.0', port=5000, keyfile='localhost.key', certfile='localhost.crt', debug=True)
