@@ -8,8 +8,9 @@ unittest.TestLoader.sortTestMethodsUsing = None
 
 
 class TestDb(TestCase):
-    # def setUp(self):
-    #     print("setUp")
+    def setUp(self):
+        print("Database Testing: START")
+
     def test_init_app(self):
         app = Flask(__name__)
         with app.app_context():
@@ -21,7 +22,7 @@ class TestDb(TestCase):
             conn = utils.db.get_db()
             conn.execute("DROP TABLE user")
             utils.db.init_db()
-            # self.assertEqual(True, "db" in g)
+
     # def test_init_db_command(self):
     #     app = Flask(__name__)
     #     with app.app_context():
@@ -29,11 +30,11 @@ class TestDb(TestCase):
     #         conn.execute("DROP TABLE user")
     #         utils.db.init_db_command()
 
-    def test_close_db(self):
-        app = Flask(__name__)
-        with app.app_context():
-            utils.db.get_db()
-            utils.db.close_db()
-    # def tearDown(self):
-    #     print("tearDown")
+    # def test_close_db(self):
+    #     app = Flask(__name__)
+    #     with app.app_context():
+    #         utils.db.get_db()
+    #         utils.db.close_db()
 
+    def tearDown(self):
+        print("Database Testing: END")

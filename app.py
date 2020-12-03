@@ -180,6 +180,17 @@ def newuser():
     else:
         return render_template("newuser.html")
 
+@app.route("/testLogin", methods=['GET'])
+def login_t():
+    """endpoint for setting up an assigned new user"""
+    # print("HIHI login")
+    if User.get("cc2742") is None:
+        User.create("cc2742", "Alice", "cc2742@columbia.edu", "qq.jpg", "streamer")
+    user = User(id_="cc2742", name="Alice", email="cc2742@columbia.edu", profile_pic="qq.jpg", usertype="streamer")
+    login_user(user)
+    # print("Bye login")
+    return redirect(url_for("index"))
+
 
 @app.route("/logout")
 @login_required
