@@ -79,11 +79,14 @@
           }
         });
 
+        /* This will anyway execute the leaving event, no matter the user decides to leave or not
+        It's a bug but I am currently not able to solve it*/
         window.onbeforeunload = function () {
           socket.emit('leave_room', {
             username: "{{ current_user_name }}",
             room: "{{ room_name }}"
           })
+          return 'Are you sure you want to leave?';
         };
 
         var outputArea = $("#chat-output");
