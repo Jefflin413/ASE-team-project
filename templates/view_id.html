@@ -25,10 +25,102 @@
               player.play();
             </script>
             
+            <!-- chat room -->
+            {% if current_user_name %}
+              <h2>Welcome to the live-streaming chatroom</h2>
+              <div class="chat-output" id="chat-output">
+                <div class="bot-message">
+                </div>
+              </div>
+
+              <div class="chat-input">
+                <form id="message_input_form">
+                  <input type="text" id="message_input" class="user-input" placeholder="Enter your message here">
+                  <button type="submit">Send</button>
+                </form>
+              </div>
+            {% else %}
+              <h2>Please login to access to the chat room</h2>
+            {% endif %}
+
           </div>
         </div>
       </div>
     </div>
+
+
+    {% if current_user_name %}
+      <script type="text/javascript" src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
+
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>
+      <script>
+        const socket = io.connect('https://' + document.domain + ':' + location.port, {secure: true});
+
+        socket.on('connect', function () {
+          socket.emit('join_room', {
+            username: "{{ current_user_name }}",
+            room: "{{ room_name }}"
+          });
+
+          let message_input = document.getElementById('message_input');
+
+          document.getElementById('message_input_form').onsubmit = function (e) {
+            e.preventDefault();
+            let message = message_input.value.trim();
+            if (message.length) {
+              socket.emit('send_message', {
+                username: "{{ current_user_name }}",
+                room: "{{ room_name }}",
+                message: message
+              })
+            }
+            message_input.value = '';
+            message_input.focus();
+          }
+        });
+
+        window.onbeforeunload = function () {
+          socket.emit('leave_room', {
+            username: "{{ current_user_name }}",
+            room: "{{ room_name }}"
+          })
+        };
+
+        var outputArea = $("#chat-output");
+
+        socket.on('receive_message', function (data) {
+          console.log(data);
+          
+          outputArea.append(`
+            <div class='bot-message'>
+              <div class='message'>
+                ${data.username}: ${data.message}
+              </div>
+            </div>
+          `);
+      /*    const newNode = document.createElement('div');
+          newNode.innerHTML = `<b>${data.username}:&nbsp;</b> ${data.message}`;
+          document.getElementById('messages').appendChild(newNode);*/
+        });
+
+        socket.on('join_room_announcement', function (data) {
+          console.log(data);
+          if (data.username !== "{{ current_user_name }}") {
+            const newNode = document.createElement('div');
+            newNode.innerHTML = `<b>${data.username} has joined the room</b>`;
+            document.getElementById('chat-output').appendChild(newNode);
+          }
+        });
+
+        socket.on('leave_room_announcement', function (data) {
+          console.log(data);
+          const newNode = document.createElement('div');
+          newNode.innerHTML = `<b>${data.username} has left the room</b>`;
+          document.getElementById('chat-output').appendChild(newNode);
+        });
+      </script>
+    {% endif %}
+
   {% endblock %}
 </body>
 </html>

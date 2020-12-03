@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>My Chat App</title>
+
+  <!-- jQuery -->
+  <script type="text/javascript" src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
+
+  <!-- CSS --> 
+  <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,700">
+  <link rel="stylesheet" href="{{ url_for('static', filename='base.css') }}">
+</head>
+<body>
+
+  {% block content %} 
+    <div class="container">
+      <div class="row">
+        <div class="col-lg-12">
+          <div class="content">
+
+  <h2>Welcome to chat room: {{ room_name }}</h2>
+
+  <div class="chat-output" id="chat-output">
+    <div class="bot-message">
+      <div>I am the only one</div>
+    </div>
+  </div>
+
+  <div class="chat-input">
+    <form id="message_input_form">
+      <input type="text" id="message_input" class="user-input" placeholder="Enter your message here">
+      <button type="submit">Send</button>
+    </form>
+  </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+<script type="text/javascript" src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>
+<script>
+  const socket = io.connect('https://' + document.domain + ':' + location.port, {secure: true});
+
+  socket.on('connect', function () {
+    socket.emit('join_room', {
+      username: "{{ username }}",
+      room: "{{ room_name }}"
+    });
+
+    let message_input = document.getElementById('message_input');
+
+    document.getElementById('message_input_form').onsubmit = function (e) {
+      e.preventDefault();
+      let message = message_input.value.trim();
+      if (message.length) {
+        socket.emit('send_message', {
+          username: "{{ username }}",
+          room: "{{ room_name }}",
+          message: message
+        })
+      }
+      message_input.value = '';
+      message_input.focus();
+    }
+  });
+
+  window.onbeforeunload = function () {
+    socket.emit('leave_room', {
+      username: "{{ username }}",
+      room: "{{ room_name }}"
+    })
+  };
+
+  var outputArea = $("#chat-output");
+
+  socket.on('receive_message', function (data) {
+    console.log(data);
+    
+    outputArea.append(`
+      <div class='bot-message'>
+        <div class='message'>
+          ${data.username}: ${data.message}
+        </div>
+      </div>
+    `);
+/*    const newNode = document.createElement('div');
+    newNode.innerHTML = `<b>${data.username}:&nbsp;</b> ${data.message}`;
+    document.getElementById('messages').appendChild(newNode);*/
+  });
+
+  socket.on('join_room_announcement', function (data) {
+    console.log(data);
+    if (data.username !== "{{ username }}") {
+      const newNode = document.createElement('div');
+      newNode.innerHTML = `<b>${data.username} has joined the room</b>`;
+      document.getElementById('chat-output').appendChild(newNode);
+    }
+  });
+
+  socket.on('leave_room_announcement', function (data) {
+    console.log(data);
+    const newNode = document.createElement('div');
+    newNode.innerHTML = `<b>${data.username} has left the room</b>`;
+    document.getElementById('chat-output').appendChild(newNode);
+  });
+</script>
+
+
+  {% endblock %}
+
+</body>
+
+
+</html>

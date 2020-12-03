@@ -18,6 +18,8 @@ from flask_login import (
 )
 from oauthlib.oauth2 import WebApplicationClient
 import requests
+# Web Socket for chatroom
+from flask_socketio import SocketIO, join_room, leave_room
 
 # Internal imports
 from utils.db import init_db_command
@@ -42,6 +44,8 @@ GOOGLE_DISCOVERY_URL = (
 # Flask app setup
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY") or os.urandom(24)
+socketio = SocketIO(app)
+socketio.init_app(app, cors_allowed_origins="*")
 
 # User session management setup
 # https://flask-login.readthedocs.io/en/latest
@@ -329,10 +333,10 @@ def view_id(id_):
         m3u8_URL = m3u8_URL[0]
     if current_user.is_authenticated:
         db.insert_watch_history(current_user.id, id_)
-        return render_template('view_id.html', m3u8_URL=m3u8_URL, current_user_name=current_user.name)
+        return render_template('view_id.html', m3u8_URL=m3u8_URL, current_user_name=current_user.name, room_name=id_)
     else:
         db.insert_watch_history('nonuser', id_)
-        return render_template('view_id.html', m3u8_URL=m3u8_URL)
+        return render_template('view_id.html', m3u8_URL=m3u8_URL, room_name=id_)
 
 @app.route("/company/<type_>", methods=['GET', 'POST'])
 @login_required
@@ -345,6 +349,31 @@ def company(type_):
             category_all = db.get_analytics_category_all()
             print(category_all)
             return render_template('company.html', category_all=category_all, current_user_name=current_user.name)
+
+# socketio, it is for the chating function on the view page
+
+@socketio.on('send_message')
+def handle_send_message_event(data):
+    app.logger.info("{} has sent message to the room {}: {}".format(data['username'],
+                                                                    data['room'],
+                                                                    data['message']))
+    socketio.emit('receive_message', data, room=data['room'])
+
+
+@socketio.on('join_room')
+def handle_join_room_event(data):
+    app.logger.info("{} has joined the room {}".format(data['username'], data['room']))
+    join_room(data['room'])
+    socketio.emit('join_room_announcement', data, room=data['room'])
+
+
+@socketio.on('leave_room')
+def handle_leave_room_event(data):
+    app.logger.info("{} has left the room {}".format(data['username'], data['room']))
+    leave_room(data['room'])
+    socketio.emit('leave_room_announcement', data, room=data['room'])
+
    
 if __name__ == "__main__":
-    app.run(ssl_context="adhoc", debug=True)
+    #app.run(ssl_context="adhoc", debug=True)
+    socketio.run(app, keyfile='localhost.key', certfile='localhost.crt', debug=True)
