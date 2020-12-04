@@ -24,16 +24,16 @@ CREATE TABLE streaming (
 );
 
 INSERT INTO user (id, name, email, usertype)
-VALUES( 'test1', 'test1' , 'test1@test', 'streamer');
+VALUES( 'test1', 'test1' , 'test1@test', 'Personal');
 
 INSERT INTO user (id, name, email, usertype)
-VALUES( 'test2', 'test2' , 'test2@test', 'streamer');
+VALUES( 'test2', 'test2' , 'test2@test', 'Personal');
 
 INSERT INTO user (id, name, email, usertype)
-VALUES( 'test3', 'test3' , 'test3@test', 'streamer');
+VALUES( 'test3', 'test3' , 'test3@test', 'Personal');
 
 INSERT INTO user (id, name, email, usertype)
-VALUES( 'company1', 'company1' , 'company1@test', 'company');
+VALUES( 'company1', 'company1' , 'company1@test', 'Company');
 
 INSERT INTO streaming (id, name, category)
 VALUES( 'test1', 'test_stream1' , 'Gaming');

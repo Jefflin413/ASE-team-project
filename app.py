@@ -155,6 +155,7 @@ def callback():
     user = User.get(unique_id)
     # Doesn't exist? Add to database
     if not user:
+        User.create(unique_id, users_name, users_email, picture, 'Personal')
         return render_template("newuser.html", userid=unique_id, fullname=users_name,
                                email=users_email, profile_pic=picture)
 
@@ -171,14 +172,14 @@ def callback():
 def newuser():
     """endpoint for setting up a new user"""
     if request.method == 'POST':
-        userid = request.form.get('uid')
+        uid = request.form.get('uid')
         name = request.form.get('fullname')
         email = request.form.get('email')
         profile_pic = request.form.get('profile_pic')
-        usertype = json.dumps(["company", "streamer"])
-        User.create(userid, name, email, profile_pic, usertype)
-        user = User(id_=userid, name=name, email=email,
-                    profile_pic=profile_pic, usertype=usertype)
+        usertype = request.form.get('usertype')
+        db.update_user(uid, name, email, profile_pic, usertype)
+        
+        user = User.get(uid)
         login_user(user)
         return redirect(url_for("index"))
     else:
@@ -219,6 +220,19 @@ def profile():
                                current_user_email=current_user.email,
                                current_user_profile_pic=current_user.profile_pic,
                                current_user_usertype=current_user.usertype)
+    else:
+        return '<a class="button" href="/login">Google Login</a>'
+
+@app.route("/editprofile")
+@login_required
+def editprofile():
+    """editprofile endpoint"""
+    if current_user.is_authenticated:
+        return render_template("editprofile.html", userid=current_user.id, 
+                               fullname=current_user.name,
+                               email=current_user.email, 
+                               profile_pic=current_user.profile_pic,
+                               usertype=current_user.usertype)
     else:
         return '<a class="button" href="/login">Google Login</a>'
 
@@ -341,7 +355,8 @@ def view_id(id_):
 @app.route("/company/<type_>", methods=['GET', 'POST'])
 @login_required
 def company(type_):
-    if 'company' not in json.loads(current_user.usertype):
+    print(current_user.usertype)
+    if current_user.usertype != 'Company':
         return "You are not a company.", 403
     
     if type_ == 'category':

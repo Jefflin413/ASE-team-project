@@ -233,3 +233,20 @@ def get_analytics_user(userid):
             ret_list.append(row[0])
     
     return ret, ret_list
+    
+def update_user(id_, name=None, email=None, profile_pic=None, usertype=None):
+    
+    db = get_db()
+    sql = "UPDATE user SET "
+    if name:
+        sql += "name = '" + name + "',"
+    if email:
+        sql += "email = '" + email + "',"
+    if profile_pic:
+        sql += "profile_pic = '" + profile_pic + "',"
+    if usertype:
+        sql += "usertype = '" + usertype + "'"
+        
+    sql += " WHERE id = '" + id_ + "'"
+    db.execute(sql)
+    db.commit()
