@@ -16,7 +16,7 @@
         <div class="col-lg-12">
           <div class="content">
             <link href="https://vjs.zencdn.net/7.10.2/video-js.css" rel="stylesheet">
-            <video id='hls-example'  class="video-js vjs-default-skin" width="400" height="300" controls>
+            <video id='hls-example' class="video-js vjs-default-skin" width="400" height="300" controls>
               <source type="application/x-mpegURL" src={{m3u8_URL}}>
             </video>
             <script src="https://vjs.zencdn.net/7.10.2/video.js"></script>
@@ -84,7 +84,8 @@
         window.onbeforeunload = function () {
           socket.emit('leave_room', {
             username: "{{ current_user_name }}",
-            room: "{{ room_name }}"
+            room: "{{ room_name }}",
+            UUID: "{{ UUID }}"
           })
           return 'Are you sure you want to leave?';
         };
@@ -121,6 +122,20 @@
           newNode.innerHTML = `<b>${data.username} has left the room</b>`;
           document.getElementById('chat-output').appendChild(newNode);
         });
+      </script>
+    {% else %}
+      <script type="text/javascript" src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>   
+      <script>
+        const socket = io.connect('https://' + document.domain + ':' + location.port, {secure: true});
+        window.onbeforeunload = function () {
+          socket.emit('leave_room', {
+            username: "",
+            room: "{{ room_name }}",
+            UUID: "{{ UUID }}"
+          })
+          return 'Are you sure you want to leave?';
+        };
       </script>
     {% endif %}
 

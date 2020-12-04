@@ -5,7 +5,7 @@ import click
 from flask import current_app, g
 from flask.cli import with_appcontext
 from collections import defaultdict
-from datetime import date
+from datetime import date, datetime
 
 
 
@@ -71,9 +71,9 @@ def create_stream(id_, name, category):
     """create an stream"""
     db = get_db()
     db.execute(
-        "INSERT INTO streaming (id, name, category)"
-        " VALUES (?, ?, ?)",
-        (id_, name, category),
+        "INSERT INTO streaming (id, name, category, current_watching)"
+        " VALUES (?, ?, ?, ?)",
+        (id_, name, category, 0),
     )
     db.commit()
 
@@ -105,6 +105,43 @@ def get_streaming_m3u8(id_):
         ret.append(row[0])
     return ret
 
+def get_current_watching(id_):
+    db = get_db()
+    res = db.execute(
+        "SELECT current_watching FROM streaming"
+        " WHERE id = (?)",
+        (id_,)
+    ).fetchall()
+    db.commit()
+    if not res:
+        return None
+    current_watching = res[0][0]
+    return current_watching
+
+def update_current_watching(id_, increase=True):
+    db = get_db()
+    res = db.execute(
+        "SELECT current_watching FROM streaming"
+        " WHERE id = (?)",
+        (id_,)
+    ).fetchall()
+    db.commit()
+    if not res:
+        return None
+    current_watching = res[0][0]
+    if increase:
+        current_watching += 1
+    else:
+        current_watching -= 1
+    
+    db.execute(
+        "UPDATE streaming"
+        " SET current_watching = (?)"
+        " WHERE id = (?)",
+        (current_watching, id_),
+    )
+    db.commit()
+
 def delete_stream(id_):
     """delete a stream"""
     db = get_db()
@@ -115,7 +152,7 @@ def delete_stream(id_):
     )
     db.commit()
 
-def insert_watch_history(watcher, streamer):
+def insert_watch_history(watcher, streamer, UUID):
     if streamer == None:
         return
     
@@ -129,16 +166,49 @@ def insert_watch_history(watcher, streamer):
     if res == None:
         return
     category = res[0]
-    today = date.today()
-    time = today.strftime("%Y/%m/%d")
+    #today = date.today()
+    #time = today.strftime("%Y/%m/%d")
+    time = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
     
     db.execute(
-        "INSERT INTO watch_history (watcher, streamer, category, start_time)"
-        " VALUES (?,?,?,?)",
-        (watcher, streamer, category, time),
+        "INSERT INTO watch_history (UUID, watcher, streamer, category, start_time)"
+        " VALUES (?,?,?,?,?)",
+        (UUID, watcher, streamer, category, time),
     )
     
     db.commit()
+
+def update_watch_history(UUID):
+    # use to add end_time into watch history
+    time = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+    db = get_db()
+    db.execute(
+        "UPDATE watch_history"
+        " SET end_time = (?)"
+        " WHERE UUID = (?)",
+        (time, UUID),
+    )
+    db.commit()
+
+def get_watch_history(watcher):
+    db = get_db()
+    res = db.execute(
+        "SELECT streamer, start_time, end_time FROM watch_history"
+        " WHERE watcher = (?)",
+        (watcher,),
+    ).fetchall()
+
+    if not res:
+        return None
+
+    ret_list = []
+    if res:
+        for row in res:
+            if row[2]:
+                ret_list.append("streamer id: " + row[0] + ", from " + row[1] + " to " + row[2])
+            else:
+                ret_list.append("streamer id: " + row[0] + ", from " + row[1])
+    return ret_list
 
 def get_analytics_category_all():
     db = get_db()
@@ -150,9 +220,9 @@ def get_analytics_category_all():
     
     ret = defaultdict(int)
     for row in res:
-        category = row[2]
+        category = row[3]
         ret[category] += 1
-        #rows.append({'watcher': row[0], 'streamer': row[1], 'category': row[2], 'start_time': row[2]})
+        #rows.append({'UUID': row[0], 'watcher': row[1], 'streamer': row[2], 'category': row[3], 'start_time': row[4], 'end_time': row[5]})
     
     ret_list = list(ret.keys())
     ret = [{"x": k, "value":v} for k,v in ret.items()]
@@ -169,9 +239,9 @@ def get_analytics_category(category):
     
     ret = defaultdict(int)
     for row in res:
-        date = row[3]
+        date = row[4].split(' ')[0]
         ret[date] += 1
-        #rows.append({'watcher': row[0], 'streamer': row[1], 'category': row[2], 'start_time': row[2]})
+        #rows.append({'UUID': row[0], 'watcher': row[1], 'streamer': row[2], 'category': row[3], 'start_time': row[4], 'end_time': row[5]})
     
     ret = sorted([{"date": k, "value":v} for k,v in ret.items()], key = lambda x: x['date'])
     
@@ -197,9 +267,9 @@ def get_analytics_user_all():
     
     ret = defaultdict(int)
     for row in res:
-        streamer = row[1]
+        streamer = row[2]
         ret[streamer] += 1
-        #rows.append({'watcher': row[0], 'streamer': row[1], 'category': row[2], 'start_time': row[2]})
+        #rows.append({'UUID': row[0], 'watcher': row[1], 'streamer': row[2], 'category': row[3], 'start_time': row[4], 'end_time': row[5]})
     
     ret_list = list(ret.keys())
     ret = [{"x": k, "value":v} for k,v in ret.items()]
@@ -216,9 +286,9 @@ def get_analytics_user(userid):
     
     ret = defaultdict(int)
     for row in res:
-        date = row[3]
+        date = row[4].split(' ')[0]
         ret[date] += 1
-        #rows.append({'watcher': row[0], 'streamer': row[1], 'category': row[2], 'start_time': row[2]})
+        #rows.append({'UUID': row[0], 'watcher': row[1], 'streamer': row[2], 'category': row[3], 'start_time': row[4], 'end_time': row[5]})
     
     ret = sorted([{"date": k, "value":v} for k,v in ret.items()], key = lambda x: x['date'])
     
@@ -250,3 +320,31 @@ def update_user(id_, name=None, email=None, profile_pic=None, usertype=None):
     sql += " WHERE id = '" + id_ + "'"
     db.execute(sql)
     db.commit()
+
+def insert_audience_comment(watcher, streamer, message):
+    time = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+    db = get_db()
+    db.execute(
+        "INSERT INTO audience_comment (watcher, streamer, message, sent_time)"
+        " VALUES (?,?,?,?)",
+        (watcher, streamer, message, time),
+    )
+    
+    db.commit()
+
+def get_audience_comment(streamer):
+    db = get_db()
+    res = db.execute(
+        "SELECT watcher, message, sent_time FROM audience_comment"
+        " WHERE streamer = (?)",
+        (streamer,),
+    ).fetchall()
+
+    if not res:
+        return None
+
+    ret_list = []
+    if res:
+        for row in res:
+            ret_list.append(row[2] + " " + row[0] + ": " + row[1])
+    return ret_list

@@ -19,6 +19,33 @@
       	    </div>
       	    <div> User type {{current_user_usertype}}</div>
 			<div> <button onclick="location.href='editprofile'" type="button" style="text-align:center">Edit Profile</button></div>
+            
+            <div>Stored chat room messages: </div>
+            <div id="chat room messages"></div>
+            
+            <div>Your watch history: </div>
+            <div id="watch history"></div>
+            <script type="text/javascript">
+              var audience_comment = JSON.parse('{{ audience_comment | safe}}')
+              var watch_history = JSON.parse('{{ watch_history | safe}}')
+              // Show the stored chat room messages
+              
+              if (audience_comment != null){
+                var text = ""
+                for (i = 0; i < audience_comment.length; i++) {
+                  text += '<div>' + audience_comment[i] + '</div>';
+                } 
+                document.getElementById("chat room messages").innerHTML = text;
+              }
+
+              if (watch_history != null){
+                var text = ""
+                for (i = 0; i < watch_history.length; i++) {
+                  text += '<div>' + watch_history[i] + '</div>';
+                }
+                document.getElementById("watch history").innerHTML = text;
+              }
+            </script>
       	  </div>
       	</div>
       </div>

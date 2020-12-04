@@ -4,6 +4,8 @@ Python standard libraries
 import os
 import sqlite3
 import time
+import uuid
+import json
 
 # Third party libraries
 import boto3
@@ -219,7 +221,9 @@ def profile():
                                current_user_name=current_user.name,
                                current_user_email=current_user.email,
                                current_user_profile_pic=current_user.profile_pic,
-                               current_user_usertype=current_user.usertype)
+                               current_user_usertype=current_user.usertype,
+                               audience_comment=json.dumps(db.get_audience_comment(current_user.id)),
+                               watch_history=json.dumps(db.get_watch_history(current_user.id)))
     else:
         return '<a class="button" href="/login">Google Login</a>'
 
@@ -318,8 +322,8 @@ def stream_describe_stack():
         Context = "You haven't started the construction of your streaming pipeline, choose a category and click \"Build Pipeline\" to start"
         OBS_URL = ""
         Stream_Key = ""
-
-    return render_template('stream_describe_stack.html', Context=Context, OBS_URL=OBS_URL, Stream_Key=Stream_Key)
+    current_watching = db.get_current_watching(current_user.id)
+    return render_template('stream_describe_stack.html', Context=Context, OBS_URL=OBS_URL, Stream_Key=Stream_Key, current_watching=current_watching)
 
 @app.route("/stream/show_video_player")
 @login_required
@@ -332,25 +336,27 @@ def stream_show_video_player():
         # if the streaming pipeline already exists
         stack_detail = AWS_client.describe_stacks(StackName=StackName)
         if stack_detail['Stacks'][0]['StackStatus'] != 'CREATE_COMPLETE':
-            return render_template('stream_show_video_player.html', m3u8_URL="")
+            return render_template('stream_show_video_player.html', m3u8_URL="", current_user_name=current_user.name, room_name=current_user.id)
         else:
             m3u8_URL=stack_detail['Stacks'][0]['Outputs'][4]['OutputValue']
             db.update_stream(current_user.id, m3u8_URL)
-            return render_template('stream_show_video_player.html', m3u8_URL=m3u8_URL)
+            return render_template('stream_show_video_player.html', m3u8_URL=m3u8_URL, current_user_name=current_user.name, room_name=current_user.id)
     except (ValueError, Exception):
-        return render_template('stream_show_video_player.html', m3u8_URL="")
+        return render_template('stream_show_video_player.html', m3u8_URL="", current_user_name=current_user.name, room_name=current_user.id)
 
 @app.route("/view/<id_>")
 def view_id(id_):
+    UUID = str(uuid.uuid1())
     m3u8_URL = db.get_streaming_m3u8(id_)
+    db.update_current_watching(id_, increase=True)
     if m3u8_URL:
         m3u8_URL = m3u8_URL[0]
     if current_user.is_authenticated:
-        db.insert_watch_history(current_user.id, id_)
-        return render_template('view_id.html', m3u8_URL=m3u8_URL, current_user_name=current_user.name, room_name=id_)
+        db.insert_watch_history(current_user.id, id_, UUID)
+        return render_template('view_id.html', m3u8_URL=m3u8_URL, current_user_name=current_user.name, room_name=id_, UUID=UUID)
     else:
-        db.insert_watch_history('nonuser', id_)
-        return render_template('view_id.html', m3u8_URL=m3u8_URL, room_name=id_)
+        db.insert_watch_history('nonuser', id_, UUID)
+        return render_template('view_id.html', m3u8_URL=m3u8_URL, room_name=id_, UUID=UUID)
 
 @app.route("/company/<type_>", methods=['GET', 'POST'])
 @login_required
@@ -383,6 +389,7 @@ def company(type_):
 
 @socketio.on('send_message')
 def handle_send_message_event(data):
+    db.insert_audience_comment(watcher=data['username'], streamer=data['room'], message=data['message'])
     app.logger.info("{} has sent message to the room {}: {}".format(data['username'],
                                                                     data['room'],
                                                                     data['message']))
@@ -398,9 +405,15 @@ def handle_join_room_event(data):
 
 @socketio.on('leave_room')
 def handle_leave_room_event(data):
-    app.logger.info("{} has left the room {}".format(data['username'], data['room']))
-    leave_room(data['room'])
-    socketio.emit('leave_room_announcement', data, room=data['room'])
+    if data['username']:
+        app.logger.info("{} has left the room {}".format(data['username'], data['room']))
+        leave_room(data['room'])
+        db.update_current_watching(data['room'], increase=False)
+        db.update_watch_history(data['UUID'])
+        socketio.emit('leave_room_announcement', data, room=data['room'])
+    else:
+        db.update_current_watching(data['room'], increase=False)
+        db.update_watch_history(data['UUID'])
 
    
 if __name__ == "__main__":

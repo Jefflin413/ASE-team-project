@@ -29,6 +29,10 @@
 		            </select>
 		          <input type="submit" value="Build pipeline">
 	          </form>
+
+            <form action="/stream" method="post">
+              <input type="submit" value="Delete pipeline">
+            </form>
 	        
 	          <div>After you request to build a pipeline, the construction will cost roughly 5 minutes. In the meanwhile, you can read the instruction of the usage and the installation of <a href="https://obsproject.com/">OBS</a> at the bottom of this <a href="https://aws.amazon.com/tw/blogs/media/part1-how-to-send-live-video-to-aws-elemental-mediastore/">website</a></div>
 
@@ -36,8 +40,9 @@
 
 	          <div id="place_for_AWS_pipeline"></div>
 	          <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>
 	          <script>
-	            var keep_asking = window.setInterval(ask_AWS, 5000);
+	            var keep_asking = window.setInterval(ask_AWS, 4000);
 			        function ask_AWS() {
  			          $.ajax({
                   url: "/stream/describe_stack",
@@ -52,6 +57,8 @@
                 });
 			        }
 	          </script>
+
+
 
 	          <button id="show_video_player" value="Start Streaming" onclick=show_video_player()>Start Streaming</button>
 	          <div>You must first have your own streaming pipeline ready, and start streaming using OBS, then you can click on this bottom to see your live-streaming on the website</div>
@@ -76,9 +83,7 @@
             <script src="https://vjs.zencdn.net/7.10.2/video.js"></script>
 
 
-            <form action="/stream" method="post">
-              <input type="submit" value="Delete pipeline">
-            </form>
+            
           </div>
         </div>
       </div>
