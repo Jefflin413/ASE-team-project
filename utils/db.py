@@ -362,13 +362,13 @@ def insert_advertise(streamer, category, valid_until, image):
     db.commit()
     
     
-def get_advertise(streamer = None, category = None):
+def get_advertise(streamer = None):
     db = get_db()
     
     if streamer:
         res = db.execute(
             "SELECT image, valid_until FROM advertise"
-            "WHERE streamer = (?)",
+            " WHERE streamer = (?)",
             (streamer,),
         ).fetchall()
         ret_list = []
@@ -376,20 +376,31 @@ def get_advertise(streamer = None, category = None):
             for row in res:
                 if row[1] > datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]:
                     ret_list.append(row[0])
-        return ret_list
 
-    if category:
-        res = db.execute(
-            "SELECT image, valid_until FROM advertise"
-            "WHERE category = (?)",
-            (category,),
-        ).fetchall()
-        ret_list = []
-        if res:
-            for row in res:
-                if row[1] > datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]:
-                    ret_list.append(row[0])
-        return ret_list
+        if ret_list:
+            return ret_list
+        else:
+            res =  db.execute(
+                "SELECT category FROM streaming"
+                " WHERE id = (?)",
+                (streamer,),
+            ).fetchone()
+    
+            if res == None:
+                return []
+            category = res[0]
+
+            res = db.execute(
+                "SELECT image, valid_until FROM advertise"
+                " WHERE category = (?)",
+                (category,),
+            ).fetchall()
+
+            if res:
+                for row in res:
+                    if row[1] > datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]:
+                        ret_list.append(row[0])
+            return ret_list
     
     return []
 

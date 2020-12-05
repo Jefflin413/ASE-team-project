@@ -7,6 +7,7 @@ import time
 import uuid
 import json
 from datetime import datetime, timedelta
+import random
 
 # Third party libraries
 import boto3
@@ -47,7 +48,7 @@ GOOGLE_DISCOVERY_URL = (
 )
 
 # Flask app setup
-UPLOAD_FOLDER = 'images'
+UPLOAD_FOLDER = 'static'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
 app = Flask(__name__)
@@ -356,14 +357,19 @@ def view_id(id_):
     UUID = str(uuid.uuid1())
     m3u8_URL = db.get_streaming_m3u8(id_)
     db.update_current_watching(id_, increase=True)
+    advertise_list = db.get_advertise(streamer=id_)
+    advertise = ""
+    if advertise_list:
+        advertise = random.choice(advertise_list)
+
     if m3u8_URL:
         m3u8_URL = m3u8_URL[0]
     if current_user.is_authenticated:
         db.insert_watch_history(current_user.id, id_, UUID)
-        return render_template('view_id.html', m3u8_URL=m3u8_URL, current_user_name=current_user.name, room_name=id_, UUID=UUID)
+        return render_template('view_id.html', m3u8_URL=m3u8_URL, current_user_name=current_user.name, room_name=id_, UUID=UUID, advertise=advertise)
     else:
         db.insert_watch_history('nonuser', id_, UUID)
-        return render_template('view_id.html', m3u8_URL=m3u8_URL, room_name=id_, UUID=UUID)
+        return render_template('view_id.html', m3u8_URL=m3u8_URL, room_name=id_, UUID=UUID, advertise=advertise)
 
 @app.route("/company/<type_>", methods=['GET', 'POST'])
 @login_required
@@ -453,7 +459,7 @@ def thanks():
                 data[k] = 1
             valid_until = datetime.now() + timedelta(days=30*data[k])
             valid_until = valid_until.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
-            db.insert_advertise(k, k, valid_until, file_path)
+            db.insert_advertise(k, k, valid_until, '\\'+file_path)
         
     return render_template('thanks.html', current_user_name=current_user.name)
 
