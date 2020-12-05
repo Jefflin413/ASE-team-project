@@ -36,7 +36,17 @@
 </div>
   <br>
   <br>
-  <div id="chart3" class="container">
+  <br>
+  <br>
+  <br>
+  <h3 style="text-align:center"> Historical Views </h3>
+  <div id="chart3" class="container"></div>
+  <br>
+  <h3 style="text-align:center"> Advertising Options </h3>
+  <br>
+  <br>
+<div style= "margin-left: 400px;" id = "table1">
+<form method="post" id = "advertise" action="/payment"></form>
 
 <script src="https://d3js.org/d3.v3.min.js"></script>
 <script src="https://d3js.org/d3.v4.min.js" type="text/javascript"></script>
@@ -48,11 +58,65 @@ var cat_list = JSON.parse('{{ cat_list | tojson | safe}}');
 var str
 
 for (var cat of cat_list) {
-    str += "<option value='"+cat+"'>" + cat + "</option>"
+    str += "<option value='"+cat+"' id = '" +cat+"'>" + cat + "</option>"
   }
   
 document.getElementById("category").innerHTML = str
+document.getElementById('{{selected}}').selected = true
 
+</script>
+
+<script>
+var chart = JSON.parse('{{ chart | tojson | safe}}');
+console.log(chart);
+var table = document.createElement('table');
+table.classList.add('table');
+
+var thead = document.createElement('thead');
+var headRow = document.createElement('tr');
+var columnNames = ["Category/Userid", "Potential Views", "Price", "Advertise amount"];
+for (var i = 0; i < 4; i++) {
+  var th = document.createElement('th');
+  th.appendChild(document.createTextNode(columnNames[i]));
+  headRow.appendChild(th);
+}
+
+thead.appendChild(headRow);
+
+var tbody = document.createElement('tbody');
+
+for (var i = 0; i < chart.length; i++) {
+  var tr = document.createElement('tr');
+
+  for (var j = 0; j < 4; j++) {
+    var td = document.createElement('td');
+
+    if (j == 3) {
+      td.classList.add("input");
+      var input = document.createElement('input');
+      input.type = "text";
+	  input.id = chart[i][0];
+	  input.setAttribute("form", "advertise");
+      td.appendChild(input);
+      tr.appendChild(td);
+      continue;
+    }
+    td.appendChild(document.createTextNode(chart[i][j]));
+    tr.appendChild(td);
+  }
+
+  tbody.appendChild(tr);
+}
+
+table.appendChild(thead);
+table.appendChild(tbody);
+document.getElementById("table1").appendChild(table);
+var submit = document.createElement('input');
+submit.type = "submit";
+submit.value = "Next";
+submit.setAttribute("form", "advertise");
+//submit.form = "advertise";
+document.getElementById("table1").appendChild(submit);
 </script>
 
 
@@ -100,7 +164,7 @@ console.log(stock);
     // Add X axis --> it is a date format
 	if (stock.length > 0) {
     var x3 = d3.scaleTime()
-      .domain(d3.extent(stock, function(d) { return d3.timeParse("%Y/%m/%d")(d.date); }))
+      .domain(d3.extent(stock, function(d) { return d3.timeParse("%Y-%m-%d")(d.date); }))
       .range([ 0, width ]);
     svg3.append("g")
       .attr("transform", "translate(0," + height + ")")
@@ -122,7 +186,7 @@ console.log(stock);
       .attr("stroke", "steelblue")
       .attr("stroke-width", 2.5)
       .attr("d", d3.line()
-        .x(function(d) { return x3(d3.timeParse("%Y/%m/%d")(d.date)) })
+        .x(function(d) { return x3(d3.timeParse("%Y-%m-%d")(d.date)) })
         .y(function(d) { return y3(d.value) })
         )
 	  .on("mouseover", function(){return tooltip.style("visibility", "visible");})

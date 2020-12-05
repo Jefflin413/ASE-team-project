@@ -6,11 +6,13 @@ import sqlite3
 import time
 import uuid
 import json
+from datetime import datetime, timedelta
 
 # Third party libraries
 import boto3
 from botocore.config import Config
-from flask import Flask, redirect, request, url_for, render_template
+from flask import Flask, redirect, request, url_for, render_template, flash
+from werkzeug.utils import secure_filename
 from flask_login import (
     LoginManager,
     current_user,
@@ -22,6 +24,7 @@ from oauthlib.oauth2 import WebApplicationClient
 import requests
 # Web Socket for chatroom
 from flask_socketio import SocketIO, join_room, leave_room
+#from sklearn.linear_model import LinearRegression
 
 # Internal imports
 from utils.db import init_db_command
@@ -44,7 +47,11 @@ GOOGLE_DISCOVERY_URL = (
 )
 
 # Flask app setup
+UPLOAD_FOLDER = 'images'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+
 app = Flask(__name__)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.secret_key = os.environ.get("SECRET_KEY") or os.urandom(24)
 socketio = SocketIO(app)
 socketio.init_app(app, cors_allowed_origins="*")
@@ -369,22 +376,87 @@ def company(type_):
         if request.method == 'GET':
             category_all, cat_list = db.get_analytics_category_all()
             print(category_all, cat_list)
-            return render_template('company.html', cat_list = cat_list, typee = type_, data_all=category_all, current_user_name=current_user.name)
+            chart = []
+            for cat in category_all:
+                potential = 31*cat['value']
+                chart.append([cat['x'], str(potential)+'/mon', '$'+f'{potential/7:.2f}'])
+            
+            return render_template('company.html', chart = chart, cat_list = cat_list, typee = type_, data_all=category_all, current_user_name=current_user.name)
         else:
             selected = request.form['category']
             category_time, cat_list = db.get_analytics_category(selected)
+            category_all, cat_list = db.get_analytics_category_all()
             print(category_time, cat_list)
-            return render_template('company2.html', cat_list = cat_list, typee = type_, data_all=category_time, current_user_name=current_user.name)
+            chart = []
+            for cat in category_all:
+                potential = 31*cat['value']
+                chart.append([cat['x'], str(potential)+'/mon', '$'+f'{potential/7:.2f}'])
+            
+            return render_template('company2.html', chart = chart, selected = selected, cat_list = cat_list, typee = type_, data_all=category_time, current_user_name=current_user.name)
     else:
         if request.method == 'GET':
             user_all, cat_list = db.get_analytics_user_all()
             print(user_all, cat_list)
-            return render_template('company.html', cat_list = cat_list, typee = type_, data_all=user_all, current_user_name=current_user.name)
+            chart = []
+            for cat in user_all:
+                potential = 31*cat['value']
+                chart.append([cat['x'], str(potential)+'/mon', '$'+f'{potential/7:.2f}'])
+                
+            return render_template('company.html', chart = chart, cat_list = cat_list, typee = type_, data_all=user_all, current_user_name=current_user.name)
         else:
             selected = request.form['category']
             user_time, cat_list = db.get_analytics_user(selected)
+            user_all, cat_list = db.get_analytics_user_all()
             print(user_time, cat_list)
-            return render_template('company2.html', cat_list = cat_list, typee = type_, data_all=user_time, current_user_name=current_user.name)
+            chart = []
+            for cat in user_all:
+                potential = 31*cat['value']
+                chart.append([cat['x'], str(potential)+'/mon', '$'+f'{potential/7:.2f}'])
+            
+            return render_template('company2.html', chart = chart, selected = selected, cat_list = cat_list, typee = type_, data_all=user_time, current_user_name=current_user.name)
+
+@app.route("/payment", methods=['GET', 'POST'])
+@login_required
+def payment():
+    print(request.form)
+    purchase = request.form.to_dict()
+    purchase = [[k, purchase[k]] for k in purchase if purchase[k]]
+    
+    return render_template('payment.html', purchase = purchase, current_user_name=current_user.name)
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+@app.route("/thanks", methods=['GET', 'POST'])
+@login_required
+def thanks():
+    data = request.form.to_dict()
+    print(data)
+    file = request.files['image']
+    # if user does not select file, browser also
+    # submit an empty part without filename
+    if file.filename == '':
+        flash('No selected file')
+        return redirect(url_for('company'))
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(file_path)
+        
+    for k in data:
+        if k != 'creditcard' or k != 'image':
+            if type(data[k]) != int:
+                data[k] = 1
+            valid_until = datetime.now() + timedelta(days=30*data[k])
+            valid_until = valid_until.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+            db.insert_advertise(k, k, valid_until, file_path)
+        
+    return render_template('thanks.html', current_user_name=current_user.name)
+
+
+
 # socketio, it is for the chating function on the view page
 
 @socketio.on('send_message')

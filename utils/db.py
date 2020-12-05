@@ -348,3 +348,48 @@ def get_audience_comment(streamer):
         for row in res:
             ret_list.append(row[2] + " " + row[0] + ": " + row[1])
     return ret_list
+
+def insert_advertise(streamer, category, valid_until, image):
+    
+    db = get_db()
+ 
+    db.execute(
+        "INSERT INTO advertise (streamer, category, valid_until, image)"
+        " VALUES (?,?,?,?)",
+        (streamer, category, valid_until, image),
+    )
+    
+    db.commit()
+    
+    
+def get_advertise(streamer = None, category = None):
+    db = get_db()
+    
+    if streamer:
+        res = db.execute(
+            "SELECT image, valid_until FROM advertise"
+            "WHERE streamer = (?)",
+            (streamer,),
+        ).fetchall()
+        ret_list = []
+        if res:
+            for row in res:
+                if row[1] > datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]:
+                    ret_list.append(row[0])
+        return ret_list
+
+    if category:
+        res = db.execute(
+            "SELECT image, valid_until FROM advertise"
+            "WHERE category = (?)",
+            (category,),
+        ).fetchall()
+        ret_list = []
+        if res:
+            for row in res:
+                if row[1] > datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]:
+                    ret_list.append(row[0])
+        return ret_list
+    
+    return []
+

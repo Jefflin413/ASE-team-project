@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <title>Payment</title>
+</head>
+<body>
+  {% block body %}
+
+    <div class="container">
+      <div class="row">
+        <div class="col-lg-12">
+          <div class="content">
+            <h1> Fake Payment Page</h1>
+			<br>
+			<div id = "table1">
+			</div>
+            <form action="/thanks" method="post" id="form1">
+              <label for="fullname">Credit Card:</label><br>
+              <input type="text" id="creditcard" name="creditcard"><br><br>
+              <label for="image">Image:</label><br>
+              <input type="file" id="image" name="image" style="position: absolute;left: 42%;"><br><br>
+			  <input type="submit" value="Submit">
+            </form> 
+			
+          </div>
+        </div>
+      </div>
+    </div>
+    
+<script>
+var purchase = JSON.parse('{{ purchase | tojson | safe}}');
+console.log(purchase);
+var table = document.createElement('table');
+table.classList.add('table');
+
+var thead = document.createElement('thead');
+var headRow = document.createElement('tr');
+var columnNames = ["Category/Userid", "Advertise amount"];
+for (var i = 0; i < 2; i++) {
+  var th = document.createElement('th');
+  th.appendChild(document.createTextNode(columnNames[i]));
+  headRow.appendChild(th);
+}
+
+thead.appendChild(headRow);
+
+var tbody = document.createElement('tbody');
+
+for (var i = 0; i < purchase.length; i++) {
+  var tr = document.createElement('tr');
+
+  for (var j = 0; j < 2; j++) {
+    var td = document.createElement('td');
+
+    td.appendChild(document.createTextNode(purchase[i][j]));
+    tr.appendChild(td);
+  }
+
+  tbody.appendChild(tr);
+}
+
+table.appendChild(thead);
+table.appendChild(tbody);
+document.getElementById("table1").appendChild(table);
+
+
+for (var i = 0; i < purchase.length; i++) {
+var input = document.createElement('input');
+      input.type = "hidden";
+	  input.setAttribute("name", purchase[i][0]);
+	  input.setAttribute("value", purchase[i][1]);
+	  //input.setAttribute("form", "advertise");
+
+document.getElementById("form1").appendChild(input);
+}
+
+
+</script>
+
+  {% endblock %}
+</body>
+</html>

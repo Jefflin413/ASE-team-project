@@ -34,6 +34,14 @@ CREATE TABLE audience_comment(
   FOREIGN KEY (streamer) REFERENCES user(id)
 );
 
+CREATE TABLE advertise(
+  streamer TEXT, 
+  category TEXT, 
+  valid_until TEXT, 
+  image TEXT
+);
+
+
 INSERT INTO user (id, name, email, usertype)
 VALUES( 'test1', 'test1' , 'test1@test', 'Personal');
 

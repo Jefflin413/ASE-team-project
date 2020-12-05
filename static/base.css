@@ -1,6 +1,7 @@
 /*@import url(https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,700);*/
 
 body {
+	background-color:#EAEDED;
     background-image: url('/static/background.png');
     background-size: cover;
     background-position: center; 
@@ -67,9 +68,9 @@ button[type=button] {
 .content{
   padding-top: 5%;
   text-align: center;
-    text-shadow: 0px 4px 3px rgba(0,0,0,0.4),
+  /* text-shadow: 0px 4px 3px rgba(0,0,0,0.4),
                  0px 8px 13px rgba(0,0,0,0.1),
-                 0px 18px 23px rgba(0,0,0,0.1);
+                 0px 18px 23px rgba(0,0,0,0.1); */
 }
 
 hr {
