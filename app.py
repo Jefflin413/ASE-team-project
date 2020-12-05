@@ -434,7 +434,9 @@ def allowed_file(filename):
 def thanks():
     data = request.form.to_dict()
     print(data)
-    file = request.files['file']
+    print("aADADADAD")
+    print(request.files)
+    file = request.files['image']
     # if user does not select file, browser also
     # submit an empty part without filename
     if file.filename == '':
