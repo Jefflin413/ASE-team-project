@@ -448,7 +448,7 @@ def thanks():
         file.save(file_path)
         
     for k in data:
-        if k != 'creditcard' or k != 'image':
+        if k != 'creditcard' and k != 'image':
             if type(data[k]) != int:
                 data[k] = 1
             valid_until = datetime.now() + timedelta(days=30*data[k])
