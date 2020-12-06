@@ -216,6 +216,7 @@ class TestDb(TestCase):
         app = Flask(__name__)
         with app.app_context():
             conn = utils.db.get_db()
+            utils.db.create_stream("unit_test001", "unit_test1", "Life")
             utils.db.insert_watch_history("unit_test001", "unit_test1", "Life")
             res = conn.execute("SELECT * FROM streaming").fetchall()
             # print(res[-1].keys())
