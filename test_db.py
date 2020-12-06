@@ -6,6 +6,7 @@ from flask import Flask
 
 import utils.db
 import os
+from datetime import date, datetime
 
 unittest.TestLoader.sortTestMethodsUsing = None
 
@@ -230,18 +231,25 @@ class TestDb(TestCase):
             res = conn.execute("SELECT * FROM streaming where `id`='unit_test111'").fetchall()
             # print(res[-1].keys())
             self.assertEqual(0, len(res))
-####
+
     def test_update_watch_history(self):
         app = Flask(__name__)
         with app.app_context():
             conn = utils.db.get_db()
-            utils.db.create_stream("unit_test001", "unit_test1", "Life")
-            utils.db.update_stream("unit_test001", "https://www.HIHI.m3u8")
-            utils.db.update_watch_history()
-            res = conn.execute("SELECT * FROM streaming").fetchall()
+            time = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+            utils.db.update_watch_history("b9073fb4-35e7-11eb-9844-0e6eb579fb2b")
+            res = conn.execute("SELECT * FROM watch_history where UUID = 'b9073fb4-35e7-11eb-9844-0e6eb579fb2b'").fetchall()
             # print(res[-1].keys())
-            self.assertEqual("unit_test001", res[-1]['id'])
-            self.assertEqual("https://www.HIHI.m3u8", res[-1]['m3u8_URL'])
+            self.assertEqual(time, res[-1]['end_time'])
+
+    def test_update_watch_history_miss(self):
+        app = Flask(__name__)
+        with app.app_context():
+            conn = utils.db.get_db()
+            utils.db.update_watch_history("UUIC999")
+            res = conn.execute("SELECT * FROM watch_history where UUID = 'UUIC999'").fetchall()
+            # print(res[-1].keys())
+            self.assertEqual([], res)
 
 
     def tearDown(self):
