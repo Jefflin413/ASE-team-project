@@ -5,6 +5,7 @@ from unittest import TestCase
 from flask import Flask
 
 import utils.db
+import utils.user
 import os
 from datetime import date, datetime
 
@@ -212,23 +213,29 @@ class TestDb(TestCase):
             res = conn.execute("SELECT * from streaming where `id` = 'unit_test001'").fetchall()
             self.assertEqual(1, len(res))
 
+
     def test_insert_watch_history(self):
         app = Flask(__name__)
         with app.app_context():
             conn = utils.db.get_db()
-            utils.db.create_stream("unit_test001", "unit_test1", "Life")
-            utils.db.insert_watch_history("unit_test001", "unit_test1", "Life")
+            utils.db.insert_watch_history("KIKI", "test1", "KIKI777")
             res = conn.execute("SELECT * FROM streaming").fetchall()
             # print(res[-1].keys())
-            self.assertEqual("unit_test001", res[-1]['id'])
-            self.assertEqual("unit_test1", res[-1]['name'])
-            self.assertEqual("Life", res[-1]['category'])
+            self.assertEqual("test3", res[-1]['id'])
+
+    def test_insert_watch_history_streamer_none(self):
+        app = Flask(__name__)
+        with app.app_context():
+            conn = utils.db.get_db()
+            utils.db.insert_watch_history("unit_test001", None, "Life")
+            res = conn.execute("SELECT * FROM streaming").fetchall()
+            self.assertEqual("test3", res[-1]['id'])
 
     def test_insert_watch_history_miss(self):
         app = Flask(__name__)
         with app.app_context():
             conn = utils.db.get_db()
-            utils.db.insert_watch_history("unit_test001", "unit_test1", "Life")
+            utils.db.insert_watch_history("unit_test001", "unit_test11", "Life")
             res = conn.execute("SELECT * FROM streaming where `id`='unit_test111'").fetchall()
             # print(res[-1].keys())
             self.assertEqual(0, len(res))
@@ -237,21 +244,100 @@ class TestDb(TestCase):
         app = Flask(__name__)
         with app.app_context():
             conn = utils.db.get_db()
-            time = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+            time = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-10]
             utils.db.update_watch_history("b9073fb4-35e7-11eb-9844-0e6eb579fb2b")
             res = conn.execute("SELECT * FROM watch_history where UUID = 'b9073fb4-35e7-11eb-9844-0e6eb579fb2b'").fetchall()
-            # print(res[-1].keys())
-            self.assertEqual(time, res[-1]['end_time'])
+            self.assertEqual(time, res[-1]['end_time'][:-7])
 
     def test_update_watch_history_miss(self):
         app = Flask(__name__)
         with app.app_context():
             conn = utils.db.get_db()
-            utils.db.update_watch_history("UUIC999")
+            utils.db.update_watch_history("UUID999")
             res = conn.execute("SELECT * FROM watch_history where UUID = 'UUIC999'").fetchall()
             # print(res[-1].keys())
             self.assertEqual([], res)
 
+    def test_get_watch_history(self):
+        app = Flask(__name__)
+        with app.app_context():
+            res = utils.db.get_watch_history("test1")
+            self.assertEqual("streamer id: test2, from 2020-11-30", res[0][:35])
+
+    def test_get_watch_history_miss(self):
+        app = Flask(__name__)
+        with app.app_context():
+            res = utils.db.get_watch_history("Alice")
+            self.assertEqual(None, res)
+
+    def test_get_watch_history_not_end(self):
+        app = Flask(__name__)
+        with app.app_context():
+            res = utils.db.get_watch_history("101034240973870390330")
+            # print(res[0])
+            self.assertEqual("streamer id: test1, from 2020-12-04", res[0][:35])
+
+    def test_get_analytics_category_all(self):
+        app = Flask(__name__)
+        with app.app_context():
+            res = utils.db.get_analytics_category_all()
+            # print(res[0], res[1])
+            self.assertEqual(res[1][0], res[0][0]['x'])
+            self.assertEqual(32, res[0][0]['value'])
+
+    def test_get_analytics_category_all_miss(self):
+        app = Flask(__name__)
+        with app.app_context():
+            conn = utils.db.get_db()
+            conn.execute("DELETE from watch_history")
+            res = utils.db.get_analytics_category_all()
+            self.assertEqual(None, res)
+
+    def test_get_analytics_category(self):
+        app = Flask(__name__)
+        with app.app_context():
+            res = utils.db.get_analytics_category("Life")
+            # print(res)
+            self.assertEqual('2020-11-20', res[0][0]['date'])
+
+    def test_get_analytics_category_miss(self):
+        app = Flask(__name__)
+        with app.app_context():
+            res = utils.db.get_analytics_category("New York")
+            # print(res)
+            self.assertEqual(None, res)
+
+    def test_get_analytics_user_all(self):
+        app = Flask(__name__)
+        with app.app_context():
+            res = utils.db.get_analytics_user_all()
+            # print(res[0], res[1])
+            self.assertEqual(res[1][0], res[0][0]['x'])
+            self.assertEqual(32, res[0][0]['value'])
+
+    def test_get_analytics_user_all_miss(self):
+        app = Flask(__name__)
+        with app.app_context():
+            conn = utils.db.get_db()
+            conn.execute("DELETE from watch_history")
+            res = utils.db.get_analytics_user_all()
+            # print(res[0], res[1])
+            self.assertEqual(None, res)
+
+    def test_get_analytics_user(self):
+        app = Flask(__name__)
+        with app.app_context():
+            res = utils.db.get_analytics_user("test1")
+            print(res[0], res[1])
+            self.assertEqual('2020-11-20', res[0][0]['date'])
+            self.assertEqual(2, res[0][0]['value'])
+            self.assertEqual('test1', res[1][0])
+
+    def test_get_analytics_user_miss(self):
+        app = Flask(__name__)
+        with app.app_context():
+            res = utils.db.get_analytics_user("Patty")
+            self.assertEqual(None, res)
 
     def tearDown(self):
         os.system("git restore utils/sqlite_db")
