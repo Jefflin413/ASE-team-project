@@ -54,40 +54,36 @@ class TestUser(TestCase):
             # print(rows)
             self.assertEqual([], rows)
 
-    # def test_get(self):
-    #     app = Flask(__name__)
-    #     with app.app_context():
-    #         # print("test get")
-    #         user = User.get("sw3525")
-    #         self.assertEqual("sw3525", user.id)
-    #         self.assertEqual("Carbon", user.name)
-    #         self.assertEqual("carbonhaha@gmail.com", user.email)
-    #         self.assertEqual("123.png", user.profile_pic)
-    #         self.assertEqual("viewer", user.usertype)
-    #
-    #         # print("Ahoy!")
-    #
-    # def test_get_miss(self):
-    #     app = Flask(__name__)
-    #     with app.app_context():
-    #         # print("test get")
-    #         user = User.get("sw3525")
-    #         self.assertEqual("sw3525", user.id)
-    #         self.assertEqual("Carbon", user.name)
-    #         self.assertEqual("carbonhaha@gmail.com", user.email)
-    #         self.assertEqual("123.png", user.profile_pic)
-    #         self.assertEqual("viewer", user.usertype)
-    #
-    #         # print("Ahoy!")
-    #
-    # def test_get_wrong_user(self):
-    #     app = Flask(__name__)
-    #     with app.app_context():
-    #         print("test get")
-    #         user = User.get("yh3328")
-    #         self.assertEqual(None, user)
-    #
-    #         print("Ahoy!")
+    def test_get(self):
+        app = Flask(__name__)
+        with app.app_context():
+            id_ = "sw3525"
+            name = "Carbon"
+            email = "carbonhaha@gmail.com"
+            profile_pic = "123.png"
+            usertype = "Personal"
+            User.create(id_, name, email, profile_pic, usertype)
+            user = User.get("sw3525")
+            self.assertEqual("sw3525", user.id)
+            self.assertEqual("Carbon", user.name)
+            self.assertEqual("carbonhaha@gmail.com", user.email)
+            self.assertEqual("123.png", user.profile_pic)
+            self.assertEqual("Personal", user.usertype)
+
+            # print("Ahoy!")
+
+    def test_get_miss(self):
+        app = Flask(__name__)
+        with app.app_context():
+            id_ = "sw3525"
+            name = "Carbon"
+            email = "carbonhaha@gmail.com"
+            profile_pic = "123.png"
+            usertype = "Personal"
+            User.create(id_, name, email, profile_pic, usertype)
+            user = User.get("sw9999")
+            self.assertEqual(None, user)
+            # print("Ahoy!")
 
     def tearDown(self):
         os.system("git restore utils/sqlite_db")

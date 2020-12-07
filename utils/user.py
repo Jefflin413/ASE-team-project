@@ -31,10 +31,13 @@ class User(UserMixin):
     @staticmethod
     def create(id_, name, email, profile_pic, usertype):
         """create an user"""
-        db = get_db()
-        db.execute(
-            "INSERT INTO user (id, name, email, profile_pic, usertype)"
-            " VALUES (?, ?, ?, ?, ?)",
-            (id_, name, email, profile_pic, usertype),
-        )
-        db.commit()
+        if name is not None:
+            db = get_db()
+            db.execute(
+                "INSERT INTO user (id, name, email, profile_pic, usertype)"
+                " VALUES (?, ?, ?, ?, ?)",
+                (id_, name, email, profile_pic, usertype),
+            )
+            db.commit()
+        else:
+            pass
