@@ -339,6 +339,117 @@ class TestDb(TestCase):
             res = utils.db.get_analytics_user("Patty")
             self.assertEqual(None, res)
 
+    def test_update_user(self):
+        app = Flask(__name__)
+        with app.app_context():
+            conn = utils.db.get_db()
+            utils.db.update_user("test2", name="Claire", email="CYYoung.com", profile_pic="Y.jpg", usertype="Personal")
+            res = conn.execute("SELECT * FROM `user` where `id` = 'test2'").fetchall()
+            # print(res)
+            self.assertEqual("Claire", res[-1]['name'])
+
+    def test_update_user_miss(self):
+        app = Flask(__name__)
+        with app.app_context():
+            conn = utils.db.get_db()
+            utils.db.update_user("CYYoung", name="Claire", email="CYYoung.com", profile_pic="Y.jpg", usertype="Personal")
+            res = conn.execute("SELECT * FROM `user` where `id` = 'CYYoung'").fetchall()
+            # print(res)
+            self.assertEqual([], res)
+
+    def test_insert_audience_comment(self):
+        app = Flask(__name__)
+        with app.app_context():
+            utils.db.insert_audience_comment("Jason", "Alice", "Hello, World!")
+            conn = utils.db.get_db()
+            res = conn.execute("SELECT * FROM audience_comment where watcher = 'Jason'").fetchall()
+            self.assertEqual("Jason", res[-1]['watcher'])
+            self.assertEqual("Alice", res[-1]['streamer'])
+            self.assertEqual("Hello, World!", res[-1]['message'])
+
+    def test_get_audience_comment(self):
+        app = Flask(__name__)
+        with app.app_context():
+            utils.db.insert_audience_comment("Jason", "Alice", "Hello, World!")
+            utils.db.get_audience_comment("Alice")
+            conn = utils.db.get_db()
+            res = conn.execute("SELECT * FROM audience_comment where streamer = 'Alice'").fetchall()
+            self.assertEqual("Jason", res[-1]['watcher'])
+            self.assertEqual("Alice", res[-1]['streamer'])
+            self.assertEqual("Hello, World!", res[-1]['message'])
+
+    def test_get_audience_comment_miss(self):
+        app = Flask(__name__)
+        with app.app_context():
+            utils.db.insert_audience_comment("Jason", "Alice", "Hello, World!")
+            utils.db.get_audience_comment("Jason")
+            conn = utils.db.get_db()
+            res = conn.execute("SELECT * FROM audience_comment where streamer = 'Jason'").fetchall()
+            self.assertEqual([], res)
+
+    def test_insert_advertise(self):
+        app = Flask(__name__)
+        with app.app_context():
+            utils.db.insert_advertise("Sony", "Gaming", "2099-11-11 11:11:11.111", "cool.png")
+            conn = utils.db.get_db()
+            res = conn.execute("SELECT * FROM advertise").fetchall()
+            self.assertEqual("Sony", res[-1]['streamer'])
+
+    def test_get_advertise(self):
+        app = Flask(__name__)
+        with app.app_context():
+            res = utils.db.get_advertise("test3")
+            # print(res)
+            self.assertEqual("\\static\\Puppy-Class-ad.jpg", res[0])
+
+    def test_get_advertise_over_time(self):
+        app = Flask(__name__)
+        with app.app_context():
+            utils.db.insert_advertise("Sony", "Gaming", "2011-11-11 11:11:11.111", "cool.png")
+            utils.db.create_stream("Sony", "Sony", "Gaming")
+            res = utils.db.get_advertise("Sony")
+            # print(res)
+            self.assertEqual("/static/simple-background-backgrounds-passion-simple-1-5c9b95d09002a.png", res[0])
+
+    def test_get_advertise_over_time_miss(self):
+        app = Flask(__name__)
+        with app.app_context():
+            utils.db.insert_advertise("Sony", "Gaming", "2011-11-11 11:11:11.111", "cool.png")
+            #utils.db.create_stream("Sony", "Sony", "Gaming")
+            res = utils.db.get_advertise("Sony")
+            # print(res)
+            self.assertEqual([], res)
+
+    def test_get_advertise_over_time_no_same_cat_ad(self):
+        app = Flask(__name__)
+        with app.app_context():
+            utils.db.insert_advertise("Sony", "Gaming", "2011-11-11 11:11:11.111", "cool.png")
+            conn = utils.db.get_db()
+            conn.execute("DELETE from advertise")
+            utils.db.create_stream("Sony", "Sony", "Gaming")
+            res = utils.db.get_advertise("Sony")
+            # print(res)
+            self.assertEqual([], res)
+
+    def test_get_advertise_over_time_no_same_cat(self):
+        app = Flask(__name__)
+        with app.app_context():
+            conn = utils.db.get_db()
+            conn.execute("DELETE from advertise")
+            utils.db.insert_advertise("Sony", "Gaming", "2011-11-11 11:11:11.111", "cool.png")
+            utils.db.create_stream("Sony", "Sony", "Gaming")
+            res = utils.db.get_advertise("Sony")
+            # print(res)
+            self.assertEqual([], res)
+
+    def test_get_advertise_over_time_no_same_cat(self):
+        app = Flask(__name__)
+        with app.app_context():
+            conn = utils.db.get_db()
+            conn.execute("DELETE from advertise")
+            res = utils.db.get_advertise(None)
+            self.assertEqual([], res)
+
     def tearDown(self):
         os.system("git restore utils/sqlite_db")
         print("tearDown")
