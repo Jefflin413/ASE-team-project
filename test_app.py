@@ -901,3 +901,6 @@ class TestDb(TestCase):
     def tearDown(self):
         os.system("git restore utils/sqlite_db")
         print("tearDown")
+
+if __name__ == "__main__":
+    unittest.main()
