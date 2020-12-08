@@ -195,6 +195,16 @@ def newuser():
     else:
         return render_template("newuser.html")
 
+@app.route("/testLogin", methods=['GET'])
+def login_t():
+    """endpoint for setting up an assigned new user"""
+    # print("HIHI login")
+    if User.get("cc2742") is None:
+        User.create("cc2742", "Alice", "cc2742@columbia.edu", "qq.jpg", "personal")
+    user = User(id_="cc2742", name="Alice", email="cc2742@columbia.edu", profile_pic="qq.jpg", usertype="personal")
+    login_user(user)
+    # print("Bye login")
+    return redirect(url_for("index"))
 
 @app.route("/logout")
 @login_required
@@ -214,40 +224,29 @@ def get_google_provider_cfg():
 @app.route("/test")
 @login_required
 def test():
-    if current_user.is_authenticated:
         return "asdasdasd"
-    else:
-        return '<a class="button" href="/login">Google Login</a>'
-
 
 @app.route("/profile")
 @login_required
 def profile():
     """profile endpoint"""
-    if current_user.is_authenticated:
-        return render_template("profile.html",
-                               current_user_name=current_user.name,
-                               current_user_email=current_user.email,
-                               current_user_profile_pic=current_user.profile_pic,
-                               current_user_usertype=current_user.usertype,
-                               audience_comment=json.dumps(db.get_audience_comment(current_user.id)),
-                               watch_history=json.dumps(db.get_watch_history(current_user.id)))
-    else:
-        return '<a class="button" href="/login">Google Login</a>'
+    return render_template("profile.html",
+                            current_user_name=current_user.name,
+                            current_user_email=current_user.email,
+                            current_user_profile_pic=current_user.profile_pic,
+                            current_user_usertype=current_user.usertype,
+                            audience_comment=json.dumps(db.get_audience_comment(current_user.id)),
+                            watch_history=json.dumps(db.get_watch_history(current_user.id)))
 
 @app.route("/editprofile")
 @login_required
 def editprofile():
     """editprofile endpoint"""
-    if current_user.is_authenticated:
-        return render_template("editprofile.html", userid=current_user.id, 
-                               fullname=current_user.name,
-                               email=current_user.email, 
-                               profile_pic=current_user.profile_pic,
-                               usertype=current_user.usertype)
-    else:
-        return '<a class="button" href="/login">Google Login</a>'
-
+    return render_template("editprofile.html", userid=current_user.id,
+                            fullname=current_user.name,
+                            email=current_user.email,
+                            profile_pic=current_user.profile_pic,
+                            usertype=current_user.usertype)
 
 @app.route("/stream", methods=['GET', 'POST'])
 @login_required
@@ -299,10 +298,7 @@ def stream():
 
     else:
         # just access to the endpoint
-        if current_user.is_authenticated:
-            return render_template("stream.html", current_user_name=current_user.name)
-        else:
-            return '<a class="button" href="/login">Google Login</a>'
+        return render_template("stream.html", current_user_name=current_user.name)
 
 @app.route("/stream/describe_stack")
 @login_required
@@ -312,12 +308,13 @@ def stream_describe_stack():
     try:
         # if the streaming pipeline already exists
         stack_detail = AWS_client.describe_stacks(StackName=StackName)
-        if stack_detail['Stacks'][0]['StackStatus'] != 'CREATE_COMPLETE':
-            Context = "Your Streaming Pipeline is under construction..."
+
+        if stack_detail['Stacks'][0]['StackStatus'] == 'DELETE_IN_PROGRESS':
+            Context = "Deleting Your Streaming Pipeline, if you want to build another one, please wait until this deletion complete"
             OBS_URL = ""
             Stream_Key = ""
-        elif stack_detail['Stacks'][0]['StackStatus'] == 'DELETE_IN_PROGRESS':
-            Context = "Deleting Your Streaming Pipeline, if you want to build another one, please wait until this deletion complete"
+        elif stack_detail['Stacks'][0]['StackStatus'] != 'CREATE_COMPLETE':
+            Context = "Your Streaming Pipeline is under construction..."
             OBS_URL = ""
             Stream_Key = ""
         else:
@@ -440,14 +437,12 @@ def allowed_file(filename):
 def thanks():
     data = request.form.to_dict()
     print(data)
-    print("aADADADAD")
-    print(request.files)
     file = request.files['image']
     # if user does not select file, browser also
     # submit an empty part without filename
     if file.filename == '':
         flash('No selected file')
-        return redirect(url_for('company'))
+        return redirect("/company/category")
     if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)

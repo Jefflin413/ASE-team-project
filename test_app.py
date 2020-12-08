@@ -2,9 +2,7 @@
 from unittest import TestCase
 from unittest.mock import patch
 import unittest
-import requests
-import time
-from multiprocessing import Process
+import os
 import app
 unittest.TestLoader.sortTestMethodsUsing = None
 
@@ -29,10 +27,14 @@ def recordedUserinfoExist():
 def recordedGoogleProviderCfg():
     return {'issuer': 'https://accounts.google.com', 'authorization_endpoint': 'https://accounts.google.com/o/oauth2/v2/auth', 'device_authorization_endpoint': 'https://oauth2.googleapis.com/device/code', 'token_endpoint': 'https://oauth2.googleapis.com/token', 'userinfo_endpoint': 'https://openidconnect.googleapis.com/v1/userinfo', 'revocation_endpoint': 'https://oauth2.googleapis.com/revoke', 'jwks_uri': 'https://www.googleapis.com/oauth2/v3/certs', 'response_types_supported': ['code', 'token', 'id_token', 'code token', 'code id_token', 'token id_token', 'code token id_token', 'none'], 'subject_types_supported': ['public'], 'id_token_signing_alg_values_supported': ['RS256'], 'scopes_supported': ['openid', 'email', 'profile'], 'token_endpoint_auth_methods_supported': ['client_secret_post', 'client_secret_basic'], 'claims_supported': ['aud', 'email', 'email_verified', 'exp', 'family_name', 'given_name', 'iat', 'iss', 'locale', 'name', 'picture', 'sub'], 'code_challenge_methods_supported': ['plain', 'S256'], 'grant_types_supported': ['authorization_code', 'refresh_token', 'urn:ietf:params:oauth:grant-type:device_code', 'urn:ietf:params:oauth:grant-type:jwt-bearer']}
 
+
+
 class TestApp(TestCase):
-    # @classmethod
-    # def setUpClass(cls):
-    #     pass
+
+    def setUp(self):
+        os.system("git restore utils/sqlite_db")
+        print("setUp")
+
     def test_callback(self):
         self.patcher1 = patch('app.Google_client.prepare_token_request',
             new=unittest.mock.MagicMock(side_effect=[("https://oauth2.googleapis.com/token",
@@ -133,3 +135,216 @@ class TestApp(TestCase):
             recorded_url = "/login/callback?code=4%2F0AY0e-g5OcyfcnNxhH_Ne5cn77zZmyN7x9qwlJKD-KTYmOEMC63Irk_kNOYOudKSEIwWDrA&scope=email%20profile%20openid%20https:%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email%20https:%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.profile&authuser=0&hd=columbia.edu&prompt=none"
             self.assertEqual(c.get(recorded_url).status_code, 400)
 
+class TestNewUser(TestCase):
+
+    def setUp(self):
+        os.system("git restore utils/sqlite_db")
+        print("setUp")
+    # def setUpClass(self):
+    #
+    #     app.run(ssl_context="adhoc", debug=True)
+    def test_newuser(self):
+        with app.app.test_client() as c:
+            url = '/newuser'
+            data = {"uid": "101034240973870390330", "fullname": "Carbon", "email": "c12@gg.com", "profile_pic": "123.png", "usertype": "Company"}
+            thing = c.post(url, data=data)
+            thing = c.get(url)
+            # print(thing.data)
+
+    def test_index(self):
+        with app.app.test_client() as c:
+            thing = c.get('/')
+            url = '/testLogin'
+            thing = c.get(url)
+            thing = c.get('/')
+
+    def test_logout(self):
+        with app.app.test_client() as c:
+            thing = c.get('/logout')
+            thing = c.get('/testLogin')
+            thing = c.get('/logout')
+
+    def test_login(self):
+        with app.app.test_client() as c:
+            c.get('/login')
+            c.get('/testLogin')
+            c.get('/testLogin')
+            c.get('/test')
+            c.get('/profile')
+
+    def test_streaming(self):
+        patcher1 = patch('app.AWS_client.describe_stacks',
+            new=unittest.mock.MagicMock(side_effect=Exception()))
+        patcher2 = patch('app.AWS_client.create_stack')
+        patcher1.start()
+        patcher2.start()
+        self.addCleanup(patcher1.stop)
+        self.addCleanup(patcher2.stop)
+
+        with app.app.test_client() as c:
+            c.get('/testLogin')
+            data = {'stream_category': 'Life'}
+            c.post('/stream', data=data)
+            c.get('/stream')
+
+    def test_streamingExist(self):
+        patcher1 = patch('app.AWS_client.describe_stacks',
+            new=unittest.mock.MagicMock())
+        patcher1.start()
+        self.addCleanup(patcher1.stop)
+        with app.app.test_client() as c:
+            c.get('/testLogin')
+            data = {'stream_category': 'Life'}
+            c.post('/stream', data=data)
+
+    def test_streamingFail(self):
+        patcher1 = patch('app.AWS_client.describe_stacks',
+            new=unittest.mock.MagicMock(side_effect=Exception()))
+        patcher2 = patch('app.AWS_client.create_stack',
+            new=unittest.mock.MagicMock(side_effect=Exception()))
+        patcher1.start()
+        patcher2.start()
+        self.addCleanup(patcher1.stop)
+        self.addCleanup(patcher2.stop)
+
+        with app.app.test_client() as c:
+            c.get('/testLogin')
+            data = {'stream_category': 'Life'}
+            c.post('/stream', data=data)
+
+    def test_streamingDelete(self):
+        patcher1 = patch('app.AWS_client.delete_stack')
+        patcher1.start()
+        self.addCleanup(patcher1.stop)
+
+        with app.app.test_client() as c:
+            c.get('/testLogin')
+            c.post('/stream')
+
+    def test_editprofile(self):
+        with app.app.test_client() as c:
+            c.get('/testLogin')
+            c.get('/editprofile')
+
+    def test_stream_describe_stack(self):
+        mockStackDetail = {'Stacks':[{'StackStatus': 'CREATE_COMPLETE', 'Outputs':[0,0,{'OutputValue':['obsurl',6,5,4,3,2,1]}]}]}
+        patcher1 = patch('app.AWS_client.describe_stacks',
+            new=unittest.mock.MagicMock(return_value=mockStackDetail))
+        patcher1.start()
+        self.addCleanup(patcher1.stop)
+        with app.app.test_client() as c:
+            c.get('/testLogin')
+            c.get('/stream/describe_stack')
+
+    def test_stream_describe_in_progress(self):
+        mockStackDetail = {'Stacks':[{'StackStatus': 'IN_PROGRESS', 'Outputs':[0,0,{'OutputValue':['obsurl',6,5,4,3,2,1]}]}]}
+        patcher1 = patch('app.AWS_client.describe_stacks',
+            new=unittest.mock.MagicMock(return_value=mockStackDetail))
+        patcher1.start()
+        self.addCleanup(patcher1.stop)
+        with app.app.test_client() as c:
+            c.get('/testLogin')
+            c.get('/stream/describe_stack')
+
+    def test_stream_delete(self):
+        mockStackDetail = {'Stacks':[{'StackStatus': 'DELETE_IN_PROGRESS'}]}
+        patcher1 = patch('app.AWS_client.describe_stacks',
+            new=unittest.mock.MagicMock(return_value=mockStackDetail))
+        patcher1.start()
+        self.addCleanup(patcher1.stop)
+        with app.app.test_client() as c:
+            c.get('/testLogin')
+            c.get('/stream/describe_stack')
+
+    def test_stream_yet(self):
+        patcher1 = patch('app.AWS_client.describe_stacks',
+            new=unittest.mock.MagicMock(side_effect=Exception()))
+        patcher1.start()
+        self.addCleanup(patcher1.stop)
+        with app.app.test_client() as c:
+            c.get('/testLogin')
+            c.get('/stream/describe_stack')
+
+    def test_stream_show_video_player(self):
+        mockStackDetail = {'Stacks':[{'StackStatus': 'CREATE_COMPLETE', 'Outputs':[0,0,{'OutputValue':['obsurl',6,5,4,3,2,1]},0,{'OutputValue': 'm3u8_URL'}]}]}
+        patcher1 = patch('app.AWS_client.describe_stacks',
+            new=unittest.mock.MagicMock(return_value=mockStackDetail))
+        patcher1.start()
+        self.addCleanup(patcher1.stop)
+        with app.app.test_client() as c:
+            c.get('/testLogin')
+            c.get('/stream/show_video_player')
+
+    def test_stream_show_video_player_in_progress(self):
+        mockStackDetail = {'Stacks':[{'StackStatus': 'IN_PROGRESS', 'Outputs':[0,0,{'OutputValue':['obsurl',6,5,4,3,2,1]},0,{'OutputValue': 'm3u8_URL'}]}]}
+        patcher1 = patch('app.AWS_client.describe_stacks',
+            new=unittest.mock.MagicMock(return_value=mockStackDetail))
+        patcher1.start()
+        self.addCleanup(patcher1.stop)
+        with app.app.test_client() as c:
+            c.get('/testLogin')
+            c.get('/stream/show_video_player')
+
+    def test_stream_show_video_player_yet(self):
+        patcher1 = patch('app.AWS_client.describe_stacks',
+            new=unittest.mock.MagicMock(side_effect=Exception()))
+        patcher1.start()
+        self.addCleanup(patcher1.stop)
+        with app.app.test_client() as c:
+            c.get('/testLogin')
+            c.get('/stream/show_video_player')
+
+    def test_view_id(self):
+        with app.app.test_client() as c:
+            c.get("/view/test1")
+            c.get('/testLogin')
+            c.get("/view/test1")
+
+    def test_company(self):
+        with app.app.test_client() as c:
+            c.get('/testLogin')
+            c.get('/company/category')
+        with app.app.test_client() as c:
+            url = '/newuser'
+            data = {"uid": "101034240973870390330", "fullname": "Carbon", "email": "c12@gg.com", "profile_pic": "123.png", "usertype": "Company"}
+            c.post(url, data=data)
+            c.get('/company/category')
+            c.post('/company/category', data={'category':'education'})
+            c.get('/company/user')
+            c.post('/company/user', data={'category':'test1'})
+
+    def test_payment(self):
+        with app.app.test_client() as c:
+            url = '/newuser'
+            data = {"uid": "101034240973870390330", "fullname": "Carbon", "email": "c12@gg.com", "profile_pic": "123.png", "usertype": "Company"}
+            c.post(url, data=data)
+            data = {'Gaming': '124', 'Life': '2312', 'Sports': '', 'sports': '', 'education': ''}
+            c.post('/payment', data=data)
+
+    def test_thanks(self):
+        with app.app.test_client() as c:
+            url = '/newuser'
+            data = {"uid": "101034240973870390330", "fullname": "Carbon", "email": "c12@gg.com", "profile_pic": "123.png", "usertype": "Company"}
+            c.post(url, data=data)
+            files = open('testpayment.png', 'rb')
+            data = {'creditcard': '2133', 'Gaming': '124', 'Life': '2312','image': files}
+            # files = {'image': open('testpayment.png', 'rb')}
+            c.post('/thanks', data=data)
+    def test_socket(self):
+        # log the user in through Flask test client
+        flask_test_client = app.app.test_client()
+
+        # connect to Socket.IO without being logged in
+        socketio_test_client = app.socketio.test_client(
+            app.app, flask_test_client=flask_test_client)
+        flask_test_client.get('/testLogin')
+        print(dir(socketio_test_client))
+        # connect to Socket.IO again, but now as a logged in user
+        data = {'username': 'Alice', 'room': 'test1'}
+        socketio_test_client.emit('join_room', data)
+        data = {'username': 'Alice', 'room': 'test1', 'message': 'no more late days!'}
+        socketio_test_client.emit('send_message', data)
+        data = {'username': 'Alice', 'room': 'test1', 'UUID': 'b90746ee-35e7-11eb-9844-0e6eb579fb2b'}
+        socketio_test_client.emit('leave_room', data)
+        data = {'username': False, 'room': 'test1', 'UUID': 'b90746ee-35e7-11eb-9844-0e6eb579fb2b'}
+        socketio_test_client.emit('leave_room', data)
