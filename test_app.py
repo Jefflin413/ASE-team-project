@@ -43,10 +43,6 @@ class TestApp(TestCase):
         print("setUp")
 
     def test_callback(self):
-        app = Flask(__name__)
-        with app.app_context():
-            conn = utils.db.get_db()
-            conn.execute("DELETE from user where `id` = '102859370295934162999'")
         self.patcher1 = patch('app.Google_client.prepare_token_request',
             new=unittest.mock.MagicMock(side_effect=[("https://oauth2.googleapis.com/token",
                 {'Content-Type': 'application/x-www-form-urlencoded'},
