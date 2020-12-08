@@ -3,7 +3,7 @@ import unittest
 from unittest import TestCase
 
 from flask import Flask
-
+from flask import current_app, g
 import utils.db
 import utils.user
 from utils.user import User
@@ -15,6 +15,7 @@ unittest.TestLoader.sortTestMethodsUsing = None
 
 class TestDb(TestCase):
 
+    # make sure any test never affect the application or other tests in db.
     def setUp(self):
         os.system("git restore utils/sqlite_db")
         print("setUp")
@@ -25,12 +26,27 @@ class TestDb(TestCase):
             conn = utils.db.get_db()
             self.assertTrue(conn)
 
-    def test_close_db(self):
+    def test_get_db_miss(self):
+        os.system("rm utils/sqlite_db")
         app = Flask(__name__)
         with app.app_context():
             conn = utils.db.get_db()
-            conn = utils.db.close_db()
-            self.assertEqual(None, conn)
+            os.system("git restore utils/sqlite_db")
+            self.assertTrue(conn)
+
+    def test_close_db(self):
+        app = Flask(__name__)
+        with app.app_context():
+            utils.db.get_db()
+            utils.db.close_db()
+            self.assertNotIn("db", g)
+
+    def test_close_db_miss(self):
+        os.system("rm utils/sqlite_db")
+        app = Flask(__name__)
+        with app.app_context():
+            utils.db.close_db()
+            self.assertNotIn("db", g)
 
     def test_init_db(self):
         app = Flask(__name__)
@@ -48,7 +64,7 @@ class TestDb(TestCase):
                 # print(r['name'])
                 self.assertEqual(tables[i], r['name'])
 
-    ## NOT SURE 1
+    # # NOT SURE 1
     # def test_init_db_command(self):
     #     app = Flask(__name__)
     #     with app.app_context():
@@ -58,18 +74,6 @@ class TestDb(TestCase):
     #         for i, r in enumerate(res):
     #             print(r['name'])
     #         utils.db.init_db_command()
-
-    ## NOT SURE 2
-    # def test_init_app(self):
-    #     app = Flask(__name__)
-    #     with app.app_context():
-    #         utils.db.init_app(app)
-    #         conn = utils.db.get_db()
-    #         res = conn.execute("SELECT * FROM sqlite_master WHERE type='table'").fetchall()
-    #         tables = ["user", "watch_history", "streaming", "audience_comment", "advertise"]
-    #         for i, r in enumerate(res):
-    #             # print(r['name'])
-    #             self.assertEqual(tables[i], r['name'])
 
 
     def test_get_streaming(self):
@@ -97,6 +101,15 @@ class TestDb(TestCase):
             self.assertEqual("unit_test001", res[-1]['id'])
             self.assertEqual("unit_test1", res[-1]['name'])
             self.assertEqual("Life", res[-1]['category'])
+
+    def test_create_stream_miss(self):
+        app = Flask(__name__)
+        with app.app_context():
+            conn = utils.db.get_db()
+            utils.db.create_stream("unit_test001", None, "Life")
+            res = conn.execute("SELECT * FROM streaming where `id` = 'unit_test001'").fetchall()
+            # print(res[-1].keys())
+            self.assertEqual([], res)
 
     def test_update_stream(self):
         app = Flask(__name__)
@@ -127,7 +140,7 @@ class TestDb(TestCase):
             # print(res[-1].keys())
             self.assertTrue(res)
 
-    def test_get_streaming_m3u8_none(self):
+    def test_get_streaming_m3u8_miss(self):
         app = Flask(__name__)
         with app.app_context():
             conn = utils.db.get_db()
@@ -145,7 +158,7 @@ class TestDb(TestCase):
             res = utils.db.get_current_watching("unit_test001")
             self.assertEqual(1, res)
 
-    def test_get_current_watching_none(self):
+    def test_get_current_watching_miss(self):
         app = Flask(__name__)
         with app.app_context():
             conn = utils.db.get_db()
@@ -165,7 +178,7 @@ class TestDb(TestCase):
             # print(res[-1].keys())
             self.assertEqual(1, res[-1]['current_watching'])
 
-    def test_update_current_watching_increase_none(self):
+    def test_update_current_watching_increase_miss(self):
         app = Flask(__name__)
         with app.app_context():
             conn = utils.db.get_db()
@@ -185,7 +198,7 @@ class TestDb(TestCase):
             # print(res[-1].keys())
             self.assertEqual(-1, res[-1]['current_watching'])
 
-    def test_update_current_watching_decrease_none(self):
+    def test_update_current_watching_decrease_miss(self):
         app = Flask(__name__)
         with app.app_context():
             conn = utils.db.get_db()
@@ -224,7 +237,7 @@ class TestDb(TestCase):
             # print(res[-1].keys())
             self.assertEqual("test3", res[-1]['id'])
 
-    def test_insert_watch_history_streamer_none(self):
+    def test_insert_watch_history_streamer_miss(self):
         app = Flask(__name__)
         with app.app_context():
             conn = utils.db.get_db()
@@ -349,7 +362,7 @@ class TestDb(TestCase):
             # print(res)
             self.assertEqual("Claire", res[-1]['name'])
 
-    def test_update_user_miss(self):
+    def test_update_user_miss_id(self):
         app = Flask(__name__)
         with app.app_context():
             conn = utils.db.get_db()
@@ -357,6 +370,19 @@ class TestDb(TestCase):
             res = conn.execute("SELECT * FROM `user` where `id` = 'CYYoung'").fetchall()
             # print(res)
             self.assertEqual([], res)
+
+    def test_update_user_some_info_none(self):
+        app = Flask(__name__)
+        with app.app_context():
+            conn = utils.db.get_db()
+            origin = conn.execute("SELECT * FROM `user` where `id` = 'test2'").fetchall()
+            utils.db.update_user("test2")
+            res = conn.execute("SELECT * FROM `user` where `id` = 'test2'").fetchall()
+            # print(res)
+            self.assertEqual(origin[-1]['name'], res[-1]['name'])
+            self.assertEqual(origin[-1]['email'], res[-1]['email'])
+            self.assertEqual(origin[-1]['profile_pic'], res[-1]['profile_pic'])
+            self.assertEqual(origin[-1]['usertype'], res[-1]['usertype'])
 
     def test_insert_audience_comment(self):
         app = Flask(__name__)
@@ -395,6 +421,14 @@ class TestDb(TestCase):
             conn = utils.db.get_db()
             res = conn.execute("SELECT * FROM advertise").fetchall()
             self.assertEqual("Sony", res[-1]['streamer'])
+
+    def test_insert_advertise_miss(self):
+        app = Flask(__name__)
+        with app.app_context():
+            utils.db.insert_advertise(None, "Gaming", "2099-11-11 11:11:11.111", "cool.png")
+            conn = utils.db.get_db()
+            res = conn.execute("SELECT * FROM advertise where image = 'cool.png'").fetchall()
+            self.assertEqual([], res)
 
     def test_get_advertise(self):
         app = Flask(__name__)
@@ -443,12 +477,12 @@ class TestDb(TestCase):
             # print(res)
             self.assertEqual([], res)
 
-    def test_get_advertise_over_time_no_same_cat(self):
+    def test_get_advertise_streamer_none(self):
         app = Flask(__name__)
         with app.app_context():
             conn = utils.db.get_db()
             conn.execute("DELETE from advertise")
-            res = utils.db.get_advertise(None)
+            res = utils.db.get_advertise()
             self.assertEqual([], res)
 
     def test_create_user(self):
@@ -520,6 +554,7 @@ class TestDb(TestCase):
             self.assertEqual(None, user)
             # print("Ahoy!")
 
+    # make sure any test never affect the application or other tests in db.
     def tearDown(self):
         os.system("git restore utils/sqlite_db")
         print("tearDown")

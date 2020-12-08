@@ -6,6 +6,7 @@ from flask import current_app, g
 from flask.cli import with_appcontext
 from collections import defaultdict
 from datetime import date, datetime
+from click.testing import CliRunner
 
 
 
@@ -62,13 +63,16 @@ def get_streaming():
 
 def create_stream(id_, name, category):
     """create an stream"""
-    db = get_db()
-    db.execute(
-        "INSERT INTO streaming (id, name, category, current_watching)"
-        " VALUES (?, ?, ?, ?)",
-        (id_, name, category, 0),
-    )
-    db.commit()
+    if name is not None:    
+        db = get_db()
+        db.execute(
+            "INSERT INTO streaming (id, name, category, current_watching)"
+            " VALUES (?, ?, ?, ?)",
+            (id_, name, category, 0),
+        )
+        db.commit()
+    else:
+         pass
 
 def update_stream(id_, m3u8_URL):
     """update m3u8_URL for a stream"""
@@ -191,9 +195,6 @@ def get_watch_history(watcher):
         (watcher,),
     ).fetchall()
 
-    if not res:
-        return None
-
     ret_list = []
     if res:
         for row in res:
@@ -201,7 +202,11 @@ def get_watch_history(watcher):
                 ret_list.append("streamer id: " + row[0] + ", from " + row[1] + " to " + row[2])
             else:
                 ret_list.append("streamer id: " + row[0] + ", from " + row[1])
-    return ret_list
+        return ret_list
+    else:
+        return None
+    
+    
 
 def get_analytics_category_all():
     db = get_db()
@@ -244,9 +249,9 @@ def get_analytics_category(category):
     ).fetchall()
     
     ret_list = []
-    if res:
-        for row in res:
-            ret_list.append(row[0])
+        
+    for row in res:
+        ret_list.append(row[0])
     
     return ret, ret_list
 
@@ -291,8 +296,8 @@ def get_analytics_user(userid):
     ).fetchall()
     
     ret_list = []
-    if res:
-        for row in res:
+
+    for row in res:
             ret_list.append(row[0])
     
     return ret, ret_list
@@ -301,18 +306,17 @@ def update_user(id_, name=None, email=None, profile_pic=None, usertype=None):
     
     db = get_db()
     sql = "UPDATE user SET "
-    if name:
+    if name and email and profile_pic and usertype:
         sql += "name = '" + name + "',"
-    if email:
         sql += "email = '" + email + "',"
-    if profile_pic:
         sql += "profile_pic = '" + profile_pic + "',"
-    if usertype:
-        sql += "usertype = '" + usertype + "'"
-        
-    sql += " WHERE id = '" + id_ + "'"
-    db.execute(sql)
-    db.commit()
+        sql += "usertype = '" + usertype + "'"    
+        sql += " WHERE id = '" + id_ + "'"
+        print(sql)
+        db.execute(sql)
+        db.commit()
+    else:
+        pass
 
 def insert_audience_comment(watcher, streamer, message):
     time = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
@@ -326,6 +330,7 @@ def insert_audience_comment(watcher, streamer, message):
     db.commit()
 
 def get_audience_comment(streamer):
+
     db = get_db()
     res = db.execute(
         "SELECT watcher, message, sent_time FROM audience_comment"
@@ -333,26 +338,27 @@ def get_audience_comment(streamer):
         (streamer,),
     ).fetchall()
 
-    if not res:
-        return None
-
     ret_list = []
     if res:
         for row in res:
             ret_list.append(row[2] + " " + row[0] + ": " + row[1])
-    return ret_list
+        return ret_list
+    else:
+        return None
 
 def insert_advertise(streamer, category, valid_until, image):
     
-    db = get_db()
- 
-    db.execute(
-        "INSERT INTO advertise (streamer, category, valid_until, image)"
-        " VALUES (?,?,?,?)",
-        (streamer, category, valid_until, image),
-    )
+    if streamer is not None:
+        db = get_db()
+        db.execute(
+            "INSERT INTO advertise (streamer, category, valid_until, image)"
+            " VALUES (?,?,?,?)",
+            (streamer, category, valid_until, image),
+        )
     
-    db.commit()
+        db.commit()
+    else:
+        pass
     
     
 def get_advertise(streamer = None):
