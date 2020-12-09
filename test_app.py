@@ -351,9 +351,12 @@ class TestNewUser(TestCase):
             data = {"uid": "101034240973870390330", "fullname": "Carbon", "email": "c12@gg.com", "profile_pic": "123.png", "usertype": "Company"}
             c.post(url, data=data)
             files = open('testpayment.png', 'rb')
-            data = {'creditcard': '2133', 'Gaming': '124', 'Life': '2312','image': files}
-            # files = {'image': open('testpayment.png', 'rb')}
+            data = {'creditcard': '2133', 'Gaming': 124, 'Life': 2312,'image': files}
             c.post('/thanks', data=data)
+            files = open('testpayment.png', 'rb')
+            data = {'creditcard': '2133', 'Gaming': 'abc', 'Life': 'def','image': files}
+            c.post('/thanks', data=data)
+
     def test_socket(self):
         # log the user in through Flask test client
         flask_test_client = app.app.test_client()

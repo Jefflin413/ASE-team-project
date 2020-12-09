@@ -433,6 +433,7 @@ def company(type_):
 @app.route("/payment", methods=['GET', 'POST'])
 @login_required
 def payment():
+    """a toy payment endpoint"""
     print(request.form)
     purchase = request.form.to_dict()
     purchase = [[k, purchase[k]] for k in purchase if purchase[k]]
@@ -462,8 +463,8 @@ def thanks():
         
     for k in data:
         if k != 'creditcard' and k != 'image':
-            if type(data[k]) != int:
-                data[k] = 1
+            # for now we just let all the purchases to be 1 in our database
+            data[k] = 1
             valid_until = datetime.now() + timedelta(days=30*data[k])
             valid_until = valid_until.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
             db.insert_advertise(k, k, valid_until, '\\'+file_path)
