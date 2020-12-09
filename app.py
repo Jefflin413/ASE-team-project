@@ -187,8 +187,13 @@ def newuser():
         email = request.form.get('email')
         profile_pic = request.form.get('profile_pic')
         usertype = request.form.get('usertype')
+        user = User.get(uid)
+        if not user:
+            return "User has not given consent to Google Login", 400
+        if len(name) > 50:
+            return render_template("newuser.html", message="Full name too long", userid=uid, fullname=name,
+                               email=email, profile_pic=profile_pic)
         db.update_user(uid, name, email, profile_pic, usertype)
-        
         user = User.get(uid)
         login_user(user)
         return redirect(url_for("index"))
@@ -199,8 +204,8 @@ def newuser():
 def login_t():
     """endpoint for setting up an assigned new user"""
     # print("HIHI login")
-    if User.get("cc2742") is None:
-        User.create("cc2742", "Alice", "cc2742@columbia.edu", "qq.jpg", "personal")
+    # if User.get("cc2742") is None:
+    #     User.create("cc2742", "Alice", "cc2742@columbia.edu", "qq.jpg", "personal")
     user = User(id_="cc2742", name="Alice", email="cc2742@columbia.edu", profile_pic="qq.jpg", usertype="personal")
     login_user(user)
     # print("Bye login")
@@ -254,7 +259,7 @@ def stream():
     """stream endpoint"""
     if request.method == 'POST' and 'stream_category' in request.form:
         # build pipeline request
-        
+
         StackName = 'liveStreaming' + current_user.id
         try:
             # if the streaming pipeline already exists
@@ -295,7 +300,6 @@ def stream():
         AWS_client.delete_stack(StackName=StackName)
         db.delete_stream(current_user.id)
         return render_template("stream.html", current_user_name=current_user.name)
-
     else:
         # just access to the endpoint
         return render_template("stream.html", current_user_name=current_user.name)
@@ -361,6 +365,8 @@ def view_id(id_):
 
     if m3u8_URL:
         m3u8_URL = m3u8_URL[0]
+    else:
+        return redirect(url_for('index'))
     if current_user.is_authenticated:
         db.insert_watch_history(current_user.id, id_, UUID)
         return render_template('view_id.html', m3u8_URL=m3u8_URL, current_user_name=current_user.name, room_name=id_, UUID=UUID, advertise=advertise)
@@ -387,6 +393,9 @@ def company(type_):
             return render_template('company.html', chart = chart, cat_list = cat_list, typee = type_, data_all=category_all, current_user_name=current_user.name)
         else:
             selected = request.form['category']
+            category_all, cat_list = db.get_analytics_category_all()
+            if selected not in cat_list:
+                return redirect('/company/category')
             category_time, cat_list = db.get_analytics_category(selected)
             category_all, cat_list = db.get_analytics_category_all()
             print(category_time, cat_list)
@@ -408,6 +417,9 @@ def company(type_):
             return render_template('company.html', chart = chart, cat_list = cat_list, typee = type_, data_all=user_all, current_user_name=current_user.name)
         else:
             selected = request.form['category']
+            user_all, cat_list = db.get_analytics_user_all()
+            if selected not in cat_list:
+                return redirect('/company/user')
             user_time, cat_list = db.get_analytics_user(selected)
             user_all, cat_list = db.get_analytics_user_all()
             print(user_time, cat_list)

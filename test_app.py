@@ -1,15 +1,17 @@
 """unit test for app.py"""
+import os
+import unittest
+from datetime import datetime
 from unittest import TestCase
 from unittest.mock import patch
-import unittest
-import os
-import app
+
 from flask import Flask
 from flask import g
+
+import app
 import utils.db
 import utils.user
 from utils.user import User
-from datetime import datetime
 
 unittest.TestLoader.sortTestMethodsUsing = None
 
@@ -154,9 +156,20 @@ class TestNewUser(TestCase):
         with app.app.test_client() as c:
             url = '/newuser'
             data = {"uid": "101034240973870390330", "fullname": "Carbon", "email": "c12@gg.com", "profile_pic": "123.png", "usertype": "Company"}
+            justbelow = "1234567890" * 4 + "123456789"
+            atboundry = "1234567890" * 5
+            justabove = "1234567890" * 5 + '1'
             thing = c.post(url, data=data)
+            data = {"uid": "101034240973870390330", "fullname": justbelow, "email": "c12@gg.com", "profile_pic": "123.png", "usertype": "Company"}
+            c.post(url, data=data)
+            data = {"uid": "101034240973870390330", "fullname": atboundry, "email": "c12@gg.com", "profile_pic": "123.png", "usertype": "Company"}
+            c.post(url, data=data)
+            data = {"uid": "101034240973870390330", "fullname": justabove, "email": "c12@gg.com", "profile_pic": "123.png", "usertype": "Company"}
+            c.post(url, data=data)
+            data = {"uid": "uid_not_in_database", "fullname": "Carbon", "email": "c12@gg.com", "profile_pic": "123.png", "usertype": "Company"}
+            response = c.post(url, data=data)
+            self.assertEqual(response.status_code, 400)
             thing = c.get(url)
-            # print(thing.data)
 
     def test_index(self):
         with app.app.test_client() as c:
@@ -179,7 +192,7 @@ class TestNewUser(TestCase):
             c.get('/test')
             c.get('/profile')
 
-    def test_streaming(self):
+    def test_stream(self):
         patcher1 = patch('app.AWS_client.describe_stacks',
             new=unittest.mock.MagicMock(side_effect=Exception()))
         patcher2 = patch('app.AWS_client.create_stack')
@@ -194,7 +207,7 @@ class TestNewUser(TestCase):
             c.post('/stream', data=data)
             c.get('/stream')
 
-    def test_streamingExist(self):
+    def test_streamExist(self):
         patcher1 = patch('app.AWS_client.describe_stacks',
             new=unittest.mock.MagicMock())
         patcher1.start()
@@ -204,7 +217,7 @@ class TestNewUser(TestCase):
             data = {'stream_category': 'Life'}
             c.post('/stream', data=data)
 
-    def test_streamingFail(self):
+    def test_streamFail(self):
         patcher1 = patch('app.AWS_client.describe_stacks',
             new=unittest.mock.MagicMock(side_effect=Exception()))
         patcher2 = patch('app.AWS_client.create_stack',
@@ -219,7 +232,7 @@ class TestNewUser(TestCase):
             data = {'stream_category': 'Life'}
             c.post('/stream', data=data)
 
-    def test_streamingDelete(self):
+    def test_streamDelete(self):
         patcher1 = patch('app.AWS_client.delete_stack')
         patcher1.start()
         self.addCleanup(patcher1.stop)
@@ -306,6 +319,7 @@ class TestNewUser(TestCase):
             c.get("/view/test1")
             c.get('/testLogin')
             c.get("/view/test1")
+            c.get("/view/101034240973870390330")
 
     def test_company(self):
         with app.app.test_client() as c:
@@ -317,8 +331,11 @@ class TestNewUser(TestCase):
             c.post(url, data=data)
             c.get('/company/category')
             c.post('/company/category', data={'category':'education'})
+            c.post('/company/category', data={'category':'Dancing'})
             c.get('/company/user')
             c.post('/company/user', data={'category':'test1'})
+            c.post('/company/user', data={'category':'Alice'})
+
 
     def test_payment(self):
         with app.app.test_client() as c:
@@ -418,6 +435,19 @@ class TestDb(TestCase):
     #             print(r['name'])
     #         utils.db.init_db_command()
 
+    def test_init_db_miss(self):
+        os.system("git restore utils/schema.sql")
+        os.system("rm utils/schema.sql")
+        app = Flask(__name__)
+        with app.app_context():
+            conn = utils.db.get_db()
+            utils.db.init_db()
+            res = conn.execute("SELECT * FROM sqlite_master WHERE type='table'").fetchall()
+            tables = ["user", "watch_history", "streaming", "audience_comment", "advertise"]
+            for i, r in enumerate(res):
+                # print(r['name'])
+                self.assertEqual(tables[i], r['name'])
+        os.system("git restore utils/schema.sql")
 
     def test_get_streaming(self):
         app = Flask(__name__)
