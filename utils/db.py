@@ -7,6 +7,8 @@ from flask.cli import with_appcontext
 from collections import defaultdict
 from datetime import date, datetime
 from click.testing import CliRunner
+import os.path
+from os import path
 
 
 
@@ -32,9 +34,11 @@ def close_db():
 def init_db():
     """initiate the database"""
     db = get_db()
-
-    with current_app.open_resource("utils/schema.sql") as f:
-        db.executescript(f.read().decode("utf8"))
+    if path.exists("utils/schema.sql"):
+        with current_app.open_resource("utils/schema.sql") as f:
+            db.executescript(f.read().decode("utf8"))
+    else:
+        pass
 
 
 
@@ -43,7 +47,7 @@ def init_db():
 def init_db_command():
     """Clear the existing data and create new tables."""
     init_db()
-    click.echo("Initialized the database.")
+    # click.echo("Initialized the database.")
 
 def get_streaming():
     """get the data of specific user"""
