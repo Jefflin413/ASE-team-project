@@ -40,6 +40,7 @@ var columnNames = ["Category/Userid", "Advertise amount"];
 for (var i = 0; i < 2; i++) {
   var th = document.createElement('th');
   th.appendChild(document.createTextNode(columnNames[i]));
+  th.setAttribute("style", "text-align:center");
   headRow.appendChild(th);
 }
 
